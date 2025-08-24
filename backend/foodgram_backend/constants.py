@@ -1,0 +1,20 @@
+"""Глобальные константы проекта."""
+
+# users
+STR_MAX_LENGTH = 150
+EMAIL_MAX_LENGTH = 254
+FORBIDDEN_USERNAME = 'me'
+
+# tags
+TAG_NAME_MAX_LENGTH = 32
+SLUG_MAX_LENGTH = 32
+
+# recipes/content
+RECIPE_NAME_MAX_LENGTH = 256
+
+# ingredients
+INGREDIENT_NAME_MAX_LENGTH = 128
+MEASUREMENT_UNIT_MAX_LENGTH = 64
+
+# string representation helper
+STR_REPRESENTATION_MAX_LENGTH = 20
