@@ -208,33 +208,41 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
     def validate(self, attrs):
-        is_create = self.instance is None
-        ingredients = attrs.get('ingredients', serializers.empty)
-        tags = attrs.get('tags', serializers.empty)
+        is_update = self.instance is not None
+        required_fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time')
 
-        # On create, ingredients and tags are required
-        if is_create:
-            if ingredients is serializers.empty or not ingredients:
-                raise serializers.ValidationError({'ingredients': ['Обязательное поле.']})
-            if tags is serializers.empty or not tags:
-                raise serializers.ValidationError({'tags': ['Обязательное поле.']})
-            if attrs.get('cooking_time', 0) < 1:
-                raise serializers.ValidationError({'cooking_time': ['Значение должно быть >= 1.']})
-        else:
-            # On update, validate only provided fields
-            if ingredients is not serializers.empty:
-                if not ingredients:
-                    raise serializers.ValidationError({'ingredients': ['Обязательное поле.']})
-                seen = set()
-                for item in ingredients:
-                    ing_id = item['id']
-                    if ing_id in seen:
-                        raise serializers.ValidationError({'ingredients': ['Ингредиент не должен повторяться.']})
-                    seen.add(ing_id)
-            if tags is not serializers.empty and not tags:
-                raise serializers.ValidationError({'tags': ['Обязательное поле.']})
-            if 'cooking_time' in attrs and attrs.get('cooking_time', 0) < 1:
-                raise serializers.ValidationError({'cooking_time': ['Значение должно быть >= 1.']})
+        # Require full payload for both create and update (per spec/collection expectations)
+        if is_update:
+            missing = [f for f in required_fields if f not in self.initial_data]
+            if missing:
+                raise serializers.ValidationError({f: ['Обязательное поле.'] for f in missing})
+
+        ingredients = attrs.get('ingredients', None)
+        tags = attrs.get('tags', None)
+
+        if not ingredients:
+            raise serializers.ValidationError({'ingredients': ['Обязательное поле.']})
+        # Duplicate ingredient ids and existence check
+        seen_ing_ids = set()
+        for item in ingredients:
+            ing_id = item['id']
+            if ing_id in seen_ing_ids:
+                raise serializers.ValidationError({'ingredients': ['Ингредиент не должен повторяться.']})
+            seen_ing_ids.add(ing_id)
+        from ingredients.models import Ingredient as IngredientModel
+        existing_count = IngredientModel.objects.filter(id__in=seen_ing_ids).count()
+        if existing_count != len(seen_ing_ids):
+            raise serializers.ValidationError({'ingredients': ['Некорректные идентификаторы ингредиентов.']})
+
+        if not tags:
+            raise serializers.ValidationError({'tags': ['Обязательное поле.']})
+        # Duplicate tags check
+        tag_ids = [t.id for t in tags]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise serializers.ValidationError({'tags': ['Теги не должны повторяться.']})
+
+        if attrs.get('cooking_time', 0) < 1:
+            raise serializers.ValidationError({'cooking_time': ['Значение должно быть >= 1.']})
         return attrs
 
     def _set_ingredients(self, recipe, ingredients):

@@ -150,13 +150,17 @@ class SubscribeView(generics.GenericAPIView):
         author = get_object_or_404(User, pk=id)
         if author == request.user:
             return Response({'detail': 'Нельзя подписаться на себя.'}, status=400)
-        Subscription.objects.get_or_create(user=request.user, author=author)
+        obj, created = Subscription.objects.get_or_create(user=request.user, author=author)
+        if not created:
+            return Response({'detail': 'Подписка уже существует.'}, status=400)
         serializer = UserWithRecipesSerializer(author, context={'request': request})
         return Response(serializer.data, status=201)
 
     def delete(self, request, id):
         author = get_object_or_404(User, pk=id)
-        Subscription.objects.filter(user=request.user, author=author).delete()
+        deleted, _ = Subscription.objects.filter(user=request.user, author=author).delete()
+        if not deleted:
+            return Response({'detail': 'Не была оформлена подписка.'}, status=400)
         return Response(status=204)
 
 
