@@ -1,13 +1,14 @@
 from pathlib import Path
-
-from datetime import timedelta
-
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-416_$x%-c5+^zv!m$5*a($ag@to@_0tl#t(nhr0!^y06wgkyfl'
+SECRET_KEY = os.getenv(
+    'SECRET_KEY',
+    'django-insecure-416_$x%-c5+^zv!m$5*a($ag@to@_0tl#t(nhr0!^y06wgkyfl'
+)
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = []
 
@@ -100,7 +101,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-#STATIC_ROOT = '/backend_static/static'
+# STATIC_ROOT = '/backend_static/static'
 STATICFILES_DIRS = (
     (BASE_DIR / 'static/'),
     (BASE_DIR.parent / 'docs/'),
@@ -130,3 +131,17 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 6,
 }
 
+# Minimal logging to console; level can be overridden via DJANGO_LOG_LEVEL
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+}

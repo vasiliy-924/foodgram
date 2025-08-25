@@ -7,12 +7,14 @@ from foodgram_backend.constants import FORBIDDEN_USERNAME
 USERNAME_REGEX = r'^[\w.@+-]+\Z'
 
 
-def validate_username_value(value):
-    """Проверяет корректность username по шаблону и запрещает me."""
-    forbidden = re.sub(r'[\w.@+-]', '', value)
-    if forbidden:
+def validate_username_value(value: str) -> str:
+    """Валидирует username по regex и запрещает специальное имя `me`.
+
+    Использует re.fullmatch согласно шпаргалке по регулярным выражениям.
+    """
+    if not re.fullmatch(USERNAME_REGEX, value):
         raise serializers.ValidationError(
-            f'Имя пользователя содержит запрещённые символы: {set(forbidden)}'
+            'Имя пользователя содержит запрещённые символы.'
         )
     if value.lower() == FORBIDDEN_USERNAME:
         raise serializers.ValidationError(

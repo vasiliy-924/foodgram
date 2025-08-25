@@ -194,6 +194,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
+    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
     ingredients = IngredientAmountWriteSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all()
@@ -203,7 +204,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
-            'id', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time'
+            'id', 'author', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time'
         )
         read_only_fields = ('id',)
 
@@ -260,8 +261,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        request = self.context.get('request')
-        recipe = Recipe.objects.create(author=request.user, **validated_data)
+        recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
         self._set_ingredients(recipe, ingredients)
         return recipe

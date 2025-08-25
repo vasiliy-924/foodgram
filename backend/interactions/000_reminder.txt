@@ -1,1 +1,0 @@
-Убедиться, что interactions действительно содержит Favorite/ShoppingCart/Follow (не разбросаны по другим apps).
