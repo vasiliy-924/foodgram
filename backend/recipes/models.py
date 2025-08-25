@@ -80,4 +80,3 @@ class IngredientInRecipe(models.Model):
                 name='unique_ingredient_per_recipe'
             ),
         )
-

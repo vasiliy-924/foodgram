@@ -13,4 +13,3 @@ class UserAdmin(BaseUserAdmin):
         'email', 'role', 'avatar'
     )
     list_display_links = ('username', 'email')
-    

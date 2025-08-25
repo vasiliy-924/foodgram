@@ -12,7 +12,8 @@ from ingredients.models import Ingredient
 class Command(BaseCommand):
     help = (
         'Импортирует ингредиенты из CSV или JSON файла.\n'
-        'По умолчанию ищет файл data/ingredients.csv относительно корня проекта.'
+        'По умолчанию ищет файл data/ingredients.csv '
+        'относительно корня проекта.'
     )
 
     def add_arguments(self, parser):
@@ -24,7 +25,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         path_opt = options.get('path')
-        default_path = (settings.BASE_DIR.parent / 'data' / 'ingredients.csv')
+        default_path = (
+            settings.BASE_DIR.parent / 'data' / 'ingredients.csv'
+        )
         file_path = Path(path_opt) if path_opt else default_path
         if not file_path.exists():
             raise CommandError(f'Файл не найден: {file_path}')
@@ -40,20 +43,36 @@ class Command(BaseCommand):
                 reader = csv.DictReader(f)
                 for row in reader:
                     name = (row.get('name') or '').strip()
-                    unit = (row.get('measurement_unit') or row.get('unit') or '').strip()
+                    unit = (
+                        row.get('measurement_unit')
+                        or row.get('unit')
+                        or ''
+                    ).strip()
                     if name and unit:
-                        rows.append({'name': name, 'measurement_unit': unit})
+                        rows.append({
+                            'name': name,
+                            'measurement_unit': unit,
+                        })
         else:
             with file_path.open('r', encoding='utf-8') as f:
                 data = json.load(f)
                 for item in data:
                     name = (item.get('name') or '').strip()
-                    unit = (item.get('measurement_unit') or item.get('unit') or '').strip()
+                    unit = (
+                        item.get('measurement_unit')
+                        or item.get('unit')
+                        or ''
+                    ).strip()
                     if name and unit:
-                        rows.append({'name': name, 'measurement_unit': unit})
+                        rows.append({
+                            'name': name,
+                            'measurement_unit': unit,
+                        })
 
         if not rows:
-            self.stdout.write(self.style.WARNING('Нет валидных записей для импорта.'))
+            self.stdout.write(
+                self.style.WARNING('Нет валидных записей для импорта.')
+            )
             return
 
         with transaction.atomic():
@@ -61,7 +80,10 @@ class Command(BaseCommand):
                 obj, created_flag = Ingredient.objects.update_or_create(
                     name=item['name'],
                     measurement_unit=item['measurement_unit'],
-                    defaults={'name': item['name'], 'measurement_unit': item['measurement_unit']}
+                    defaults={
+                        'name': item['name'],
+                        'measurement_unit': item['measurement_unit'],
+                    }
                 )
                 if created_flag:
                     created += 1
@@ -69,5 +91,10 @@ class Command(BaseCommand):
                     updated += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f'Импорт завершён. Создано: {created}, обновлено: {updated}. Из файла: {file_path}'
+            'Импорт завершён. Создано: {created}, обновлено: {updated}. '
+            'Из файла: {file_path}'.format(
+                created=created,
+                updated=updated,
+                file_path=file_path,
+            )
         ))

@@ -1,16 +1,17 @@
-from pathlib import Path
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv(
-    'SECRET_KEY',
-    'django-insecure-416_$x%-c5+^zv!m$5*a($ag@to@_0tl#t(nhr0!^y06wgkyfl'
-)
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     # Django
@@ -28,7 +29,6 @@ INSTALLED_APPS = [
 
     # Приложения
     'api.apps.ApiConfig',
-    'core.apps.CoreConfig',
     'ingredients.apps.IngredientsConfig',
     'interactions.apps.InteractionsConfig',
     'pages.apps.PagesConfig',
@@ -69,12 +69,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.getenv('DJANGO_USE_SQLITE', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'django'),
+            'USER': os.getenv('POSTGRES_USER', 'django'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', ''),
+            'PORT': os.getenv('DB_PORT', '5432')
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -101,11 +113,14 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-# STATIC_ROOT = '/backend_static/static'
-STATICFILES_DIRS = (
-    (BASE_DIR / 'static/'),
-    (BASE_DIR.parent / 'docs/'),
-)
+if DEBUG:
+    STATICFILES_DIRS = (
+        BASE_DIR / 'static/',
+        BASE_DIR.parent / 'docs/',
+    )
+else:
+    STATICFILES_DIRS = []
+    STATIC_ROOT = '/backend_static/static'
 
 
 MEDIA_URL = '/media/'
@@ -114,8 +129,6 @@ MEDIA_ROOT = (BASE_DIR / 'media') if DEBUG else '/app/media'
 AUTH_USER_MODEL = 'users.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -131,7 +144,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 6,
 }
 
-# Minimal logging to console; level can be overridden via DJANGO_LOG_LEVEL
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

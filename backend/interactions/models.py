@@ -77,4 +77,3 @@ class Subscription(models.Model):
                 name='unique_subscription'
             ),
         )
-

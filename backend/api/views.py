@@ -1,11 +1,13 @@
-from rest_framework import generics, status, viewsets, mixins
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action
 from django.db.models import Q, Sum
 from django.http import HttpResponse
 
+from rest_framework import generics, mixins, status, viewsets
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     TokenCreateSerializer,
     TagSerializer,
@@ -19,7 +21,6 @@ from api.serializers import (
     RecipeMinifiedSerializer,
     UserWithRecipesSerializer,
 )
-from api.permissions import IsAuthorOrReadOnly
 from ingredients.models import Ingredient
 from interactions.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Recipe, IngredientInRecipe
@@ -28,7 +29,7 @@ from users.models import User
 
 
 class TokenLoginView(generics.GenericAPIView):
-    """Получить токен авторизации по email и паролю."""
+    """Получение токена авторизации по email и паролю."""
 
     serializer_class = TokenCreateSerializer
     permission_classes = (AllowAny,)
@@ -42,7 +43,7 @@ class TokenLoginView(generics.GenericAPIView):
 
 
 class TokenLogoutView(generics.GenericAPIView):
-    """Удалить токен текущего пользователя."""
+    """Удаление токена текущего пользователя."""
 
     permission_classes = (IsAuthenticated,)
 
@@ -81,7 +82,7 @@ class IngredientViewSet(
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('id')
-    http_method_names = ['get', 'post', 'put', 'delete']
+    http_method_names = ('get', 'post', 'put', 'delete')
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'create'):
@@ -94,6 +95,15 @@ class UsersViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return UserCreateSerializer
         return UserSerializer
+
+    def update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def partial_update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(
         detail=False,
@@ -140,7 +150,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response({'avatar': user.avatar.url})
+        url = user.avatar.url
+        if request:
+            url = request.build_absolute_uri(url)
+        return Response({'avatar': url})
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
@@ -209,9 +222,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response(status=204)
 
 
-# moved user utilities into UsersViewSet actions
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnly,)
 
@@ -223,8 +233,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         request = self.request
         author_id = request.query_params.get('author')
-        if author_id:
-            qs = qs.filter(author_id=author_id)
+        if author_id and str(author_id).isdigit():
+            qs = qs.filter(author_id=int(author_id))
         tags = request.query_params.getlist('tags')
         if tags:
             qs = qs.filter(tags__slug__in=tags).distinct()
@@ -325,7 +335,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='get-link',
     )
     def get_link(self, request, pk=None):
-        # MVP короткой ссылки
         recipe = self.get_object()
         short_link = f'https://foodgram.example.org/s/{recipe.id}'
         return Response({'short-link': short_link})
@@ -359,6 +368,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'attachment; filename="shopping-list.txt"'
         )
         return response
-
-
-# download_shopping_cart moved into RecipeViewSet action

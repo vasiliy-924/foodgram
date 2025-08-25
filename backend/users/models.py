@@ -17,16 +17,16 @@ class User(AbstractUser):
     first_name = models.CharField(
         verbose_name='имя',
         max_length=STR_MAX_LENGTH,
-        blank=False  # required
+        blank=False
     )
     last_name = models.CharField(
         verbose_name='фамилия',
         max_length=STR_MAX_LENGTH,
-        blank=False  # required
+        blank=False
     )
     username = models.CharField(
         verbose_name='никнейм',
-        max_length=STR_MAX_LENGTH,  # required
+        max_length=STR_MAX_LENGTH,
         unique=True,
         help_text=(
             f'Обязательно. Не более {STR_MAX_LENGTH} символов. '
@@ -49,9 +49,8 @@ class User(AbstractUser):
     )
     avatar = models.ImageField(
         verbose_name='аватар пользователя',
-        blank=True  # consider default avatar later
+        blank=True
     )
-    # is_subscribed ("is_subscribed": false, - выдержка из Redoc)
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -69,9 +68,5 @@ class User(AbstractUser):
 
     @property
     def is_subscribed(self):
-        """
-        Заглушка поля для сериализаторов (зависит от текущего
-        пользователя).
-        """
+        """Заглушка поля для сериализаторов (зависит от текущего пользов)."""
         return False
-

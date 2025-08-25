@@ -1,20 +1,20 @@
 from django.urls import include, path
+
 from rest_framework.routers import DefaultRouter
 
 from api.views import (
+    IngredientViewSet,
+    RecipeViewSet,
+    TagViewSet,
     TokenLoginView,
     TokenLogoutView,
-    TagViewSet,
-    IngredientViewSet,
     UsersViewSet,
-    RecipeViewSet,
 )
 
 
 api_v1_router = DefaultRouter()
 
 api_v1_router.register(r'users', UsersViewSet, basename='users')
-# Register read-only endpoints
 api_v1_router.register(r'tags', TagViewSet, basename='tags')
 api_v1_router.register(
     r'ingredients',
@@ -27,7 +27,6 @@ auth_urlpatterns = [
     path('token/login/', TokenLoginView.as_view(), name='token-login'),
     path('token/logout/', TokenLogoutView.as_view(), name='token-logout'),
 ]
-
 
 urlpatterns = [
     path('auth/', include((auth_urlpatterns, 'auth'))),
