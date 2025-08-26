@@ -141,6 +141,7 @@ dmypy.json
 static/
 media/
 
-what-to-do.md
+.git
+
 z_techical_schedule.md
-z_code_style.md
+
