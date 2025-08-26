@@ -30,4 +30,5 @@ class Ingredient(models.Model):
         )
 
     def __str__(self):
+        """Возвращает отображаемое имя ингредиента."""
         return str(self.name)

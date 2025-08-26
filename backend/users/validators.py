@@ -8,10 +8,7 @@ USERNAME_REGEX = r'^[\w.@+-]+\Z'
 
 
 def validate_username_value(value: str) -> str:
-    """Валидирует username по regex и запрещает специальное имя `me`.
-
-    Использует re.fullmatch согласно шпаргалке по регулярным выражениям.
-    """
+    """Валидирует username по regex и запрещает специальное имя `me`."""
     if not re.fullmatch(USERNAME_REGEX, value):
         raise serializers.ValidationError(
             'Имя пользователя содержит запрещённые символы.'

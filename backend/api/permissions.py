@@ -6,12 +6,7 @@ class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
         """Проверяет, является ли пользователь администратором."""
-        user = request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and (getattr(user, 'is_admin', False) or user.is_superuser)
-        )
+        return request.user.is_authenticated and request.user.is_admin
 
 
 class IsAuthorOrReadOnly(BasePermission):
@@ -19,19 +14,16 @@ class IsAuthorOrReadOnly(BasePermission):
 
     def has_permission(self, request, view):
         """Проверяет права на уровне запроса."""
-        return request.method in SAFE_METHODS or (
-            request.user and request.user.is_authenticated
-        )
+        return request.method in SAFE_METHODS or request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        """Проверяет права на уровне объекта."""
-        if request.method in SAFE_METHODS:
-            return True
-        user = request.user
-        return bool(
-            (hasattr(obj, 'author') and obj.author == user)
-            or getattr(user, 'is_admin', False)
-            or user.is_superuser
+        """
+        Проверяет права на уровне объекта.
+        """
+        return (
+            request.method in SAFE_METHODS
+            or obj.author == request.user
+            or request.user.is_admin
         )
 
 
@@ -40,9 +32,7 @@ class IsAdminOrReadOnly(BasePermission):
 
     def has_permission(self, request, view):
         """Проверяет права на уровне запроса для админа или только чтение."""
-        user = request.user
         return request.method in SAFE_METHODS or (
-            user
-            and user.is_authenticated
-            and (getattr(user, 'is_admin', False) or user.is_superuser)
+            request.user.is_authenticated
+            and (request.user.is_admin or request.user.is_superuser)
         )

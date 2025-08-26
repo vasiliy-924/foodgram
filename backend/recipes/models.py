@@ -49,6 +49,7 @@ class Recipe(models.Model):
         ordering = ('-id',)
 
     def __str__(self):
+        """Возвращает отображаемое название рецепта."""
         return str(self.name)
 
 

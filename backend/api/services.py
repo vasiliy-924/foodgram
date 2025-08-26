@@ -2,10 +2,7 @@ from typing import Optional
 
 
 def build_absolute_file_url(request, file_field) -> Optional[str]:
-    """
-    Возвращает абсолютный URL для File/ImageField
-    или None, если файла нет.
-    """
+    """Возвращает абсолютный URL для File/ImageField или None."""
     if not file_field:
         return None
     url = getattr(file_field, 'url', None)

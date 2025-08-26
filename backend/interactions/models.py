@@ -5,6 +5,8 @@ from recipes.models import Recipe
 
 
 class Favorite(models.Model):
+    """Связь рецепта и пользователя в списке избранного."""
+    
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -30,6 +32,8 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
+    """Позиция рецепта в списке покупок пользователя."""
+    
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -55,6 +59,8 @@ class ShoppingCart(models.Model):
 
 
 class Subscription(models.Model):
+    """Подписка пользователя на автора рецептов."""
+    
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

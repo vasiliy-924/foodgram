@@ -14,14 +14,26 @@ from api.views import (
 
 api_v1_router = DefaultRouter()
 
-api_v1_router.register(r'users', UsersViewSet, basename='users')
-api_v1_router.register(r'tags', TagViewSet, basename='tags')
+api_v1_router.register(
+    r'users',
+    UsersViewSet,
+    basename='users'
+)
+api_v1_router.register(
+    r'tags',
+    TagViewSet,
+    basename='tags'
+)
 api_v1_router.register(
     r'ingredients',
     IngredientViewSet,
     basename='ingredients'
 )
-api_v1_router.register(r'recipes', RecipeViewSet, basename='recipes')
+api_v1_router.register(
+    r'recipes',
+    RecipeViewSet,
+    basename='recipes'
+)
 
 auth_urlpatterns = [
     path('token/login/', TokenLoginView.as_view(), name='token-login'),

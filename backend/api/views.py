@@ -35,6 +35,7 @@ class TokenLoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        """Возвращает auth_token для валидных учетных данных."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
@@ -48,6 +49,7 @@ class TokenLogoutView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
+        """Удаляет все токены текущего пользователя и возвращает 204."""
         Token.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -57,6 +59,8 @@ class TagViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Просмотр тегов (список и детальная информация)."""
+    
     queryset = Tag.objects.all().order_by('id')
     serializer_class = TagSerializer
     permission_classes = (AllowAny,)
@@ -68,11 +72,14 @@ class IngredientViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Поиск и просмотр ингредиентов (список и детально)."""
+    
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
 
     def get_queryset(self):
+        """Возвращает queryset с фильтром по префиксу name (istartswith)."""
         qs = Ingredient.objects.all().order_by('id')
         name = self.request.query_params.get('name')
         if name:
@@ -81,10 +88,13 @@ class IngredientViewSet(
 
 
 class UsersViewSet(viewsets.ModelViewSet):
+    """Работа с пользователями и их профилем/подписками."""
+    
     queryset = User.objects.all().order_by('id')
     http_method_names = ('get', 'post', 'put', 'delete')
 
     def get_permissions(self):
+        """Определяет права доступа в зависимости от действия."""
         if self.action in ('list', 'retrieve', 'create'):
             return (AllowAny(),)
         if self.action == 'me':
@@ -92,17 +102,21 @@ class UsersViewSet(viewsets.ModelViewSet):
         return (IsAuthenticated(),)
 
     def get_serializer_class(self):
+        """Возвращает сериализатор для текущего действия."""
         if self.action == 'create':
             return UserCreateSerializer
         return UserSerializer
 
     def update(self, request, *args, **kwargs):
+        """Запрещает полный update пользователей (405)."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def partial_update(self, request, *args, **kwargs):
+        """Запрещает частичный update пользователей (405)."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
+        """Запрещает удаление пользователей (405)."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(
@@ -111,6 +125,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def me(self, request):
+        """Возвращает данные профиля текущего пользователя."""
         serializer = UserSerializer(
             request.user,
             context={'request': request}
@@ -124,6 +139,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='set_password',
     )
     def set_password(self, request):
+        """Меняет пароль при верном текущем пароле, возвращает 204."""
         serializer = SetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         current = serializer.validated_data['current_password']
@@ -144,6 +160,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='me/avatar',
     )
     def avatar(self, request):
+        """Устанавливает аватар текущего пользователя из base64."""
         serializer = SetAvatarSerializer(
             data=request.data,
             context={'request': request},
@@ -157,6 +174,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
+        """Удаляет аватар текущего пользователя, если он установлен."""
         if request.user.avatar:
             request.user.avatar.delete(save=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -168,6 +186,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='subscriptions',
     )
     def subscriptions(self, request):
+        """Возвращает список авторов, на которых подписан пользователь."""
         qs = User.objects.filter(subscribers__user=request.user).distinct()
         page = self.paginate_queryset(qs)
         serializer = UserWithRecipesSerializer(
@@ -186,6 +205,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='subscribe',
     )
     def subscribe(self, request, pk=None):
+        """Оформляет подписку на автора, если это не сам пользователь."""
         author = self.get_object()
         if author == request.user:
             return Response(
@@ -209,6 +229,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
+        """Отписывает от автора, если подписка существовала."""
         author = self.get_object()
         deleted, _ = Subscription.objects.filter(
             user=request.user,
@@ -223,9 +244,14 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """CRUD для рецептов и дополнительные действия (лайки, корзина)."""
+    
     permission_classes = (IsAuthorOrReadOnly,)
 
     def get_queryset(self):
+        """
+        Возвращает queryset с фильтрами по автору, тегам, избранному и корзине
+        """
         qs = (
             Recipe.objects.all()
             .select_related('author')
@@ -253,11 +279,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_serializer_class(self):
+        """Выбирает сериализатор: чтение для list/retrieve, иначе запись."""
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
     def perform_create(self, serializer):
+        """Сохраняет рецепт, автора берет из сериализатора."""
         serializer.save()
 
     @action(
@@ -266,6 +294,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def favorite(self, request, pk=None):
+        """Добавляет рецепт в избранное пользователя."""
         recipe = self.get_object()
         _, created = Favorite.objects.get_or_create(
             user=request.user,
@@ -283,6 +312,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @favorite.mapping.delete
     def unfavorite(self, request, pk=None):
+        """Удаляет рецепт из избранного пользователя."""
         recipe = self.get_object()
         deleted, _ = Favorite.objects.filter(
             user=request.user,
@@ -299,6 +329,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart',
     )
     def add_to_cart(self, request, pk=None):
+        """Добавляет рецепт в список покупок пользователя."""
         recipe = self.get_object()
         _, created = ShoppingCart.objects.get_or_create(
             user=request.user,
@@ -316,6 +347,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @add_to_cart.mapping.delete
     def remove_from_cart(self, request, pk=None):
+        """Удаляет рецепт из списка покупок пользователя."""
         recipe = self.get_object()
         deleted, _ = ShoppingCart.objects.filter(
             user=request.user,
@@ -335,6 +367,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='get-link',
     )
     def get_link(self, request, pk=None):
+        """Возвращает короткую ссылку на рецепт."""
         recipe = self.get_object()
         short_link = f'https://foodgram.example.org/s/{recipe.id}'
         return Response({'short-link': short_link})
@@ -346,6 +379,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart',
     )
     def download_shopping_cart(self, request):
+        """Формирует и отдает txt-файл со списком покупок пользователя."""
         ingredients = (
             IngredientInRecipe.objects
             .filter(recipe__in_carts__user=request.user)
