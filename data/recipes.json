@@ -1,0 +1,42 @@
+[
+  {
+    "author": "vasya",
+    "name": "Омлет с сыром",
+    "text": "Простой и быстрый завтрак: яйца, молоко, сыр.",
+    "cooking_time": 10,
+    "tags": ["breakfast"],
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==",
+    "ingredients": [
+      {"name": "яйца куриные", "measurement_unit": "г", "amount": 150},
+      {"name": "молоко", "measurement_unit": "мл", "amount": 50},
+      {"name": "сыр твердый", "measurement_unit": "г", "amount": 30}
+    ]
+  },
+  {
+    "author": "masha",
+    "name": "Салат Цезарь",
+    "text": "Классический салат с курицей, сыром пармезан и соусом.",
+    "cooking_time": 25,
+    "tags": ["lunch"],
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==",
+    "ingredients": [
+      {"name": "Куриная грудка", "measurement_unit": "г", "amount": 200},
+      {"name": "Салат романо", "measurement_unit": "г", "amount": 150},
+      {"name": "Сыр пармезан", "measurement_unit": "г", "amount": 40}
+    ]
+  },
+  {
+    "author": "masha",
+    "name": "Паста Болоньезе",
+    "text": "Паста с соусом болоньезе из говядины и томатов.",
+    "cooking_time": 40,
+    "tags": ["dinner"],
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==",
+    "ingredients": [
+      {"name": "Спагетти", "measurement_unit": "г", "amount": 200},
+      {"name": "Говядина", "measurement_unit": "г", "amount": 250},
+      {"name": "Томаты", "measurement_unit": "г", "amount": 200}
+    ]
+  }
+]
+

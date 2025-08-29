@@ -112,15 +112,16 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/'
+STATIC_URL = '/backend_static/'
+STATIC_ROOT = os.getenv('STATIC_ROOT', '/static')
 if DEBUG:
-    STATICFILES_DIRS = (
+    candidates = [
         BASE_DIR / 'static/',
         BASE_DIR.parent / 'docs/',
-    )
+    ]
+    STATICFILES_DIRS = tuple(path for path in candidates if path.exists())
 else:
-    STATICFILES_DIRS = []
-    STATIC_ROOT = '/backend_static/static'
+    STATICFILES_DIRS = ()
 
 
 MEDIA_URL = '/media/'

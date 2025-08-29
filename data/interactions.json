@@ -1,0 +1,13 @@
+{
+  "favorites": [
+    { "user": "vasya", "recipe": "Омлет с сыром" },
+    { "user": "masha", "recipe": "Паста Болоньезе" }
+  ],
+  "shopping_cart": [
+    { "user": "vasya", "recipe": "Паста Болоньезе" }
+  ],
+  "subscriptions": [
+    { "user": "vasya", "author": "masha" }
+  ]
+}
+

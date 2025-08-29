@@ -1,0 +1,24 @@
+[
+  {
+    "username": "admin",
+    "email": "admin@example.org",
+    "first_name": "Admin",
+    "last_name": "User",
+    "password": "Admin123!"
+  },
+  {
+    "username": "vasya",
+    "email": "vasya@example.org",
+    "first_name": "Вася",
+    "last_name": "Пупкин",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "masha",
+    "email": "masha@example.org",
+    "first_name": "Маша",
+    "last_name": "Иванова",
+    "password": "Qwerty123"
+  }
+]
+
