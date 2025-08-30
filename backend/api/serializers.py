@@ -17,7 +17,7 @@ User = get_user_model()
 # Пользователи:
 class SetAvatarSerializer(serializers.Serializer):
     """Сериализатор установки аватара пользователя из base64-строки."""
-    
+
     avatar = serializers.CharField(required=True)
 
     def save(self, **kwargs):
@@ -43,7 +43,7 @@ class SetAvatarSerializer(serializers.Serializer):
 
 class SetPasswordSerializer(serializers.Serializer):
     """Сериализатор смены пароля текущего пользователя."""
-    
+
     new_password = serializers.CharField(required=True)
     current_password = serializers.CharField(required=True)
 
@@ -95,7 +95,7 @@ class TokenCreateSerializer(serializers.Serializer):
 
 class UserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания пользователя."""
-    
+
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -116,7 +116,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор пользователя для чтения данных профиля."""
-    
+
     is_subscribed = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
 
@@ -156,7 +156,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор ингредиента."""
-    
+
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
@@ -167,7 +167,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class Base64ImageField(serializers.ImageField):
     """Поле изображения, принимающее и валидирующее base64-строку."""
-    
+
     def to_internal_value(self, data):
         """Преобразует base64-строку в файл изображения."""
         if isinstance(data, str):
@@ -187,7 +187,7 @@ class Base64ImageField(serializers.ImageField):
 
 class RecipeMinifiedSerializer(serializers.ModelSerializer):
     """Упрощенный сериализатор рецепта (id, имя, изображение, время)."""
-    
+
     image = serializers.SerializerMethodField()
 
     class Meta:
@@ -203,7 +203,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 class IngredientInRecipeReadSerializer(serializers.ModelSerializer):
     """Сериализатор ингредиента в составе рецепта (чтение)."""
-    
+
     id = serializers.IntegerField(source='ingredient.id', read_only=True)
     name = serializers.CharField(source='ingredient.name', read_only=True)
     measurement_unit = serializers.CharField(
@@ -217,7 +217,7 @@ class IngredientInRecipeReadSerializer(serializers.ModelSerializer):
 
 class IngredientAmountWriteSerializer(serializers.Serializer):
     """Элемент списка ингредиентов при создании/редактировании рецепта."""
-    
+
     id = serializers.IntegerField()
     amount = serializers.IntegerField(min_value=1)
 
@@ -232,7 +232,7 @@ class IngredientAmountWriteSerializer(serializers.Serializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериализатор рецепта для чтения."""
-    
+
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
     ingredients = IngredientInRecipeReadSerializer(
@@ -278,7 +278,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор рецепта для записи (создание/обновление)."""
-    
+
     author = serializers.HiddenField(default=serializers.CurrentUserDefault())
     ingredients = IngredientAmountWriteSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
@@ -389,7 +389,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
 class UserWithRecipesSerializer(UserSerializer):
     """Сериализатор пользователя с его рецептами и их количеством."""
-    
+
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 

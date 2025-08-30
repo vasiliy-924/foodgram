@@ -103,7 +103,8 @@ class Command(BaseCommand):
 
         for item in rows:
             name = (item.get('name') or '').strip()
-            unit = (item.get('measurement_unit') or item.get('unit') or '').strip()
+            unit = (item.get('measurement_unit')
+                    or item.get('unit') or '').strip()
             if not name or not unit:
                 continue
             _, was_created = Ingredient.objects.get_or_create(
@@ -176,7 +177,6 @@ class Command(BaseCommand):
         for t in tags:
             name = t['name']
             slug = t['slug']
-            # Сначала ищем по slug, затем по name, чтобы избежать дублей по name
             tag_obj = Tag.objects.filter(slug=slug).first()
             if not tag_obj:
                 tag_obj = Tag.objects.filter(name=name).first()
@@ -262,7 +262,6 @@ class Command(BaseCommand):
         suggested_name: str,
     ) -> None:
         try:
-            # Обрезаем возможный префикс data:image/png;base64,
             if ',' in data_b64:
                 data_b64 = data_b64.split(',', 1)[1]
             binary = base64.b64decode(data_b64)
@@ -369,8 +368,6 @@ class Command(BaseCommand):
 
         return created
 
-    # endregion
-
     def _assign_image_auto(
         self,
         recipe: Recipe,
@@ -380,7 +377,6 @@ class Command(BaseCommand):
     ) -> None:
         image_assigned = False
 
-        # 1) Пытаемся найти файл в data/photos по названию (и слагу)
         photos_dir = os.path.join(data_dir, 'photos')
         photo_full = self._find_photo_by_name(recipe.name, photos_dir)
         if photo_full and os.path.exists(photo_full):
@@ -395,7 +391,6 @@ class Command(BaseCommand):
                 )
                 image_assigned = True
 
-        # 2) Если файл не найден, пробуем base64 из JSON
         if not image_assigned and image_b64:
             self._assign_image_from_b64(
                 recipe,
@@ -404,7 +399,6 @@ class Command(BaseCommand):
             )
             image_assigned = True
 
-        # 3) Либо путь к файлу, заданный в JSON (относительно data/)
         if not image_assigned and image_path:
             full = os.path.join(data_dir, image_path)
             if os.path.exists(full):
@@ -419,7 +413,6 @@ class Command(BaseCommand):
                     )
                     image_assigned = True
 
-        # 4) Финальный fallback — белый фон
         if not image_assigned and not recipe.image:
             self._assign_image_from_b64(
                 recipe,
@@ -473,4 +466,3 @@ class Command(BaseCommand):
             return None
 
         return None
-        

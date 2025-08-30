@@ -60,7 +60,7 @@ class TagViewSet(
     viewsets.GenericViewSet,
 ):
     """Просмотр тегов (список и детальная информация)."""
-    
+
     queryset = Tag.objects.all().order_by('id')
     serializer_class = TagSerializer
     permission_classes = (AllowAny,)
@@ -73,7 +73,7 @@ class IngredientViewSet(
     viewsets.GenericViewSet,
 ):
     """Поиск и просмотр ингредиентов (список и детально)."""
-    
+
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
@@ -89,7 +89,7 @@ class IngredientViewSet(
 
 class UsersViewSet(viewsets.ModelViewSet):
     """Работа с пользователями и их профилем/подписками."""
-    
+
     queryset = User.objects.all().order_by('id')
     http_method_names = ('get', 'post', 'put', 'delete')
 
@@ -245,7 +245,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """CRUD для рецептов и дополнительные действия (лайки, корзина)."""
-    
+
     permission_classes = (IsAuthorOrReadOnly,)
 
     def get_queryset(self):

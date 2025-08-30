@@ -22,6 +22,6 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     """Отображение подписок пользователей на авторов в админке."""
-    
+
     list_display = ('user', 'author')
     search_fields = ('user__username', 'author__username')

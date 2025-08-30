@@ -15,5 +15,5 @@ class RecipeAdmin(admin.ModelAdmin):
 @admin.register(IngredientInRecipe)
 class IngredientInRecipeAdmin(admin.ModelAdmin):
     """Отображение ингредиентов с количеством внутри рецепта в админке."""
-    
+
     list_display = ('id', 'recipe', 'ingredient', 'amount')
