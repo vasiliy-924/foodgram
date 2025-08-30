@@ -12,23 +12,22 @@ const About = ({ updateOrders, orders }) => {
     </MetaTags>
     
     <Container>
-      <h1 className={styles.title}>Привет!</h1>
+      <h1 className={styles.title}>О проекте</h1>
       <div className={styles.content}>
         <div>
           <h2 className={styles.subtitle}>Что это за сайт?</h2>
           <div className={styles.text}>
             <p className={styles.textItem}>
-              Представляю вам проект, созданный во время обучения в Яндекс Практикуме. Этот проект — часть учебного курса, но он создан полностью самостоятельно.
+              «Фудграм» — веб‑приложение для публикации и хранения кулинарных рецептов.
             </p>
             <p className={styles.textItem}>
-              Цель этого сайта — дать возможность пользователям создавать и хранить рецепты на онлайн-платформе. Кроме того, можно скачать список продуктов, необходимых для
-              приготовления блюда, просмотреть рецепты друзей и добавить любимые рецепты в список избранных.
+              Пользователи регистрируются, создают рецепты с фотографиями, ингредиентами и тегами, могут редактировать и удалять свои публикации.
             </p>
             <p className={styles.textItem}>
-              Чтобы использовать все возможности сайта — нужна регистрация. Проверка адреса электронной почты не осуществляется, вы можете ввести любой email. 
+              Доступны избранное, подписки на авторов и список покупок: рецепты можно добавлять/удалять из избранного и корзины с любой страницы списка.
             </p>
             <p className={styles.textItem}>
-              Заходите и делитесь своими любимыми рецептами!
+              Список покупок выгружается файлом, при этом одноимённые ингредиенты суммируются. Поиск ингредиентов работает по вхождению в начало названия.
             </p>
           </div>
         </div>
@@ -38,11 +37,23 @@ const About = ({ updateOrders, orders }) => {
           </h2>
           <div className={styles.text}>
             <p className={styles.textItem}>
-              Код проекта находится тут - <a href="#" className={styles.textLink}>Github</a>
+              Автор проекта: Петров Василий
             </p>
             <p className={styles.textItem}>
-              Автор проекта: <a href="#" className={styles.textLink}>Имя Автора</a>
+              GitHub: <a href="https://github.com/vasiliy-924" target="_blank" rel="noreferrer" className={styles.textLink}>github.com/vasiliy-924</a>
             </p>
+            <p className={styles.textItem}>
+              Email: <a href="mailto:vasiliy924vip@yandex.ru" className={styles.textLink}>vasiliy924vip@yandex.ru</a>
+            </p>
+            <p className={styles.textItem}>
+              Телефон: <a href="tel:+79373804794" className={styles.textLink}>+7 (937) 380‑47‑94</a>
+            </p>
+            <p className={styles.textItem}>
+              Telegram: <a href="https://t.me/thunderbasil" target="_blank" rel="noreferrer" className={styles.textLink}>@thunderbasil</a>
+            </p>
+            <div className={styles.qrWrapper}>
+              <img src="/images/telegram-qr.png" alt="QR‑код Telegram @thunderbasil" className={styles.qr} />
+            </div>
           </div>
         </aside>
       </div>
