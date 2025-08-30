@@ -1,6 +1,8 @@
 import base64
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
@@ -104,6 +106,24 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'id', 'email', 'username', 'first_name', 'last_name', 'password'
         )
         read_only_fields = ('id',)
+
+    def validate(self, attrs):
+        """
+        Проверяет пароль встроенными валидаторами Django
+        с учетом атрибутов пользователя.
+        """
+        password = attrs.get('password')
+        temp_user = User(
+            username=attrs.get('username'),
+            email=attrs.get('email'),
+            first_name=attrs.get('first_name'),
+            last_name=attrs.get('last_name'),
+        )
+        try:
+            validate_password(password, user=temp_user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({'password': list(e.messages)})
+        return attrs
 
     def create(self, validated_data):
         """Создает пользователя и сохраняет хешированный пароль."""

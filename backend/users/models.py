@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.password_validation import validate_password
 from django.db import models
 
 from foodgram_backend.constants import STR_MAX_LENGTH, EMAIL_MAX_LENGTH
@@ -70,3 +71,10 @@ class User(AbstractUser):
     def is_subscribed(self):
         """Заглушка поля для сериализаторов (зависит от текущего пользов)."""
         return False
+
+    def set_password(self, raw_password):
+        """Устанавливает пароль после проверки встроенными валидаторами."""
+        if raw_password is None:
+            return super().set_password(raw_password)
+        validate_password(raw_password, user=self)
+        return super().set_password(raw_password)

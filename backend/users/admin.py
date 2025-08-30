@@ -13,3 +13,4 @@ class UserAdmin(BaseUserAdmin):
         'email', 'role', 'avatar'
     )
     list_display_links = ('username', 'email')
+    search_fields = ('username', 'email', 'first_name', 'last_name')

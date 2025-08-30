@@ -1,5 +1,7 @@
 from django.db.models import Q, Sum
 from django.http import HttpResponse
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.authtoken.models import Token
@@ -149,6 +151,10 @@ class UsersViewSet(viewsets.ModelViewSet):
                 {'current_password': ['Неверный пароль.']},
                 status=400,
             )
+        try:
+            validate_password(new, user=request.user)
+        except DjangoValidationError as e:
+            return Response({'new_password': list(e.messages)}, status=400)
         request.user.set_password(new)
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
