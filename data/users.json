@@ -19,6 +19,76 @@
     "first_name": "Маша",
     "last_name": "Иванова",
     "password": "Qwerty123"
+  },
+  {
+    "username": "olga",
+    "email": "olga@example.org",
+    "first_name": "Ольга",
+    "last_name": "Смирнова",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "petr",
+    "email": "petr@example.org",
+    "first_name": "Пётр",
+    "last_name": "Сидоров",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "ivan",
+    "email": "ivan@example.org",
+    "first_name": "Иван",
+    "last_name": "Кузнецов",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "anna",
+    "email": "anna@example.org",
+    "first_name": "Анна",
+    "last_name": "Волкова",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "dmitry",
+    "email": "dmitry@example.org",
+    "first_name": "Дмитрий",
+    "last_name": "Морозов",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "sveta",
+    "email": "sveta@example.org",
+    "first_name": "Светлана",
+    "last_name": "Фёдорова",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "nikita",
+    "email": "nikita@example.org",
+    "first_name": "Никита",
+    "last_name": "Алексеев",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "elena",
+    "email": "elena@example.org",
+    "first_name": "Елена",
+    "last_name": "Павлова",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "sergey",
+    "email": "sergey@example.org",
+    "first_name": "Сергей",
+    "last_name": "Соколов",
+    "password": "Qwerty123"
+  },
+  {
+    "username": "tatiana",
+    "email": "tatiana@example.org",
+    "first_name": "Татьяна",
+    "last_name": "Орлова",
+    "password": "Qwerty123"
   }
 ]
 

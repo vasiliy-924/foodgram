@@ -16,19 +16,16 @@ from users.models import User
 
 
 DEFAULT_IMAGE_B64 = (
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecC'
-    'AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJg'
-    'gg=='
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lE\n"
+    "QVR42mP8/x8AAwMCAO3GkF8AAAAASUVORK5CYII="
 )
 
 
 class Command(BaseCommand):
     help = (
         'Заполняет БД тестовыми данными из директории data/.\n'
-        '- Импортирует ингредиенты/теги через существующую команду '
-        'import_ingredients,\n'
-        '- Создает пользователей, рецепты (с картинками), связи (теги, '
-        'ингредиенты), а также подписки, избранное и список покупок.\n'
+        '- Импортирует ингредиенты, теги, пользователей, рецепты (с картинками)\n'
+        '  и связи (подписки, избранное, список покупок).\n'
         'Запуск: python manage.py seed_demo\n'
         'Повторный запуск безопасен (idempotent).'
     )
@@ -38,9 +35,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            data_dir = os.path.abspath(
-                os.path.join(settings.BASE_DIR, '..', 'data')
-            )
+            # Предпочтительно использовать /data внутри контейнера,
+            # иначе fallback на локальный путь BASE_DIR/../data
+            container_data = '/data'
+            if os.path.isdir(container_data):
+                data_dir = container_data
+            else:
+                data_dir = os.path.abspath(
+                    os.path.join(settings.BASE_DIR, '..', 'data')
+                )
             # 1) Ингредиенты
             ingredients_created = self._ensure_ingredients(data_dir)
 
@@ -201,92 +204,7 @@ class Command(BaseCommand):
         data_dir: str,
     ) -> int:
         if not recipes:
-            recipes = [
-                {
-                    'author': 'vasya',
-                    'name': 'Омлет с сыром',
-                    'text': (
-                        'Простой и быстрый завтрак: '
-                        'яйца, молоко, сыр.'
-                    ),
-                    'cooking_time': 10,
-                    'tags': ['breakfast'],
-                    'image_base64': DEFAULT_IMAGE_B64,
-                    'ingredients': [
-                        {
-                            'name': 'яйца куриные',
-                            'measurement_unit': 'г',
-                            'amount': 150,
-                        },
-                        {
-                            'name': 'молоко',
-                            'measurement_unit': 'мл',
-                            'amount': 50,
-                        },
-                        {
-                            'name': 'сыр твердый',
-                            'measurement_unit': 'г',
-                            'amount': 30,
-                        },
-                    ]
-                },
-                {
-                    'author': 'masha',
-                    'name': 'Салат Цезарь',
-                    'text': (
-                        'Классический салат с курицей, '
-                        'сыром пармезан и соусом.'
-                    ),
-                    'cooking_time': 25,
-                    'tags': ['lunch'],
-                    'image_base64': DEFAULT_IMAGE_B64,
-                    'ingredients': [
-                        {
-                            'name': 'Куриная грудка',
-                            'measurement_unit': 'г',
-                            'amount': 200,
-                        },
-                        {
-                            'name': 'Салат романо',
-                            'measurement_unit': 'г',
-                            'amount': 150,
-                        },
-                        {
-                            'name': 'Сыр пармезан',
-                            'measurement_unit': 'г',
-                            'amount': 40,
-                        },
-                    ]
-                },
-                {
-                    'author': 'masha',
-                    'name': 'Паста Болоньезе',
-                    'text': (
-                        'Паста с соусом болоньезе '
-                        'из говядины и томатов.'
-                    ),
-                    'cooking_time': 40,
-                    'tags': ['dinner'],
-                    'image_base64': DEFAULT_IMAGE_B64,
-                    'ingredients': [
-                        {
-                            'name': 'Спагетти',
-                            'measurement_unit': 'г',
-                            'amount': 200,
-                        },
-                        {
-                            'name': 'Говядина',
-                            'measurement_unit': 'г',
-                            'amount': 250,
-                        },
-                        {
-                            'name': 'Томаты',
-                            'measurement_unit': 'г',
-                            'amount': 200,
-                        },
-                    ]
-                },
-            ]
+            return 0
 
         created_count = 0
         for r in recipes:
@@ -305,40 +223,13 @@ class Command(BaseCommand):
             if created:
                 created_count += 1
 
-            # image
-            image_assigned = False
-            image_b64 = r.get('image_base64')
-            image_path = r.get('image')
-            if image_b64:
-                self._assign_image_from_b64(
-                    recipe,
-                    image_b64,
-                    suggested_name=(
-                        self._slugify_filename(recipe.name) + '.png'
-                    ),
-                )
-                image_assigned = True
-            elif image_path:
-                full = os.path.join(data_dir, image_path)
-                if os.path.exists(full):
-                    with open(full, 'rb') as f:
-                        content = ContentFile(f.read())
-                        recipe.image.save(
-                            name=os.path.join(
-                                'recipes/images/', os.path.basename(full)
-                            ),
-                            content=content,
-                            save=True,
-                        )
-                        image_assigned = True
-            if not image_assigned and not recipe.image:
-                self._assign_image_from_b64(
-                    recipe,
-                    DEFAULT_IMAGE_B64,
-                    suggested_name=(
-                        self._slugify_filename(recipe.name) + '.png'
-                    ),
-                )
+            # image (единая стратегия)
+            self._assign_image_auto(
+                recipe=recipe,
+                data_dir=data_dir,
+                image_b64=r.get('image_base64'),
+                image_path=r.get('image'),
+            )
 
             # tags
             tag_slugs = r.get('tags') or []
@@ -479,4 +370,107 @@ class Command(BaseCommand):
         return created
 
     # endregion
+
+    def _assign_image_auto(
+        self,
+        recipe: Recipe,
+        data_dir: str,
+        image_b64: Optional[str],
+        image_path: Optional[str],
+    ) -> None:
+        image_assigned = False
+
+        # 1) Пытаемся найти файл в data/photos по названию (и слагу)
+        photos_dir = os.path.join(data_dir, 'photos')
+        photo_full = self._find_photo_by_name(recipe.name, photos_dir)
+        if photo_full and os.path.exists(photo_full):
+            with open(photo_full, 'rb') as f:
+                content = ContentFile(f.read())
+                recipe.image.save(
+                    name=os.path.join(
+                        'recipes/images/', os.path.basename(photo_full)
+                    ),
+                    content=content,
+                    save=True,
+                )
+                image_assigned = True
+
+        # 2) Если файл не найден, пробуем base64 из JSON
+        if not image_assigned and image_b64:
+            self._assign_image_from_b64(
+                recipe,
+                image_b64,
+                suggested_name=(self._slugify_filename(recipe.name) + '.png'),
+            )
+            image_assigned = True
+
+        # 3) Либо путь к файлу, заданный в JSON (относительно data/)
+        if not image_assigned and image_path:
+            full = os.path.join(data_dir, image_path)
+            if os.path.exists(full):
+                with open(full, 'rb') as f:
+                    content = ContentFile(f.read())
+                    recipe.image.save(
+                        name=os.path.join(
+                            'recipes/images/', os.path.basename(full)
+                        ),
+                        content=content,
+                        save=True,
+                    )
+                    image_assigned = True
+
+        # 4) Финальный fallback — белый фон
+        if not image_assigned and not recipe.image:
+            self._assign_image_from_b64(
+                recipe,
+                DEFAULT_IMAGE_B64,
+                suggested_name=(self._slugify_filename(recipe.name) + '.png'),
+            )
+
+    def _find_photo_by_name(self, name: Optional[str], photos_dir: str) -> Optional[str]:
+        """
+        Ищет файл изображения в каталоге photos, соответствующий названию рецепта.
+        Порядок:
+        1) Точное совпадение базового имени: "<name>.<ext>"
+        2) Слаг по названию: "<slugified>.<ext>"
+        3) Поиск по списку файлов: совпадение по базовому имени
+           (регистр игнорируется) или по слагу, либо подстрока.
+        """
+        if not name or not os.path.isdir(photos_dir):
+            return None
+
+        exts = ('.jpg', '.jpeg', '.png', '.webp')
+
+        def candidates_for(stem: str):
+            for ext in exts:
+                yield os.path.join(photos_dir, f"{stem}{ext}")
+
+        # 1) exact name
+        for path in candidates_for(name):
+            if os.path.exists(path):
+                return path
+
+        # 2) slug variant
+        slug = self._slugify_filename(name)
+        for path in candidates_for(slug):
+            if os.path.exists(path):
+                return path
+
+        # 3) scan directory
+        try:
+            for fname in os.listdir(photos_dir):
+                base, ext = os.path.splitext(fname)
+                if ext.lower() not in exts:
+                    continue
+                if (
+                    base == name
+                    or base.lower() == name.lower()
+                    or self._slugify_filename(base) == slug
+                    or name.lower() in base.lower()
+                ):
+                    return os.path.join(photos_dir, fname)
+        except Exception:
+            return None
+
+        return None
         

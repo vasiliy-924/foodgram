@@ -1,13 +1,46 @@
 {
   "favorites": [
     { "user": "vasya", "recipe": "Омлет с сыром" },
-    { "user": "masha", "recipe": "Паста Болоньезе" }
+    { "user": "masha", "recipe": "Паста Болоньезе" },
+    { "user": "olga", "recipe": "Паста Болоньезе" },
+    { "user": "olga", "recipe": "Салат Цезарь" },
+    { "user": "petr", "recipe": "Паста с томатами и пармезаном" },
+    { "user": "petr", "recipe": "Омлет с сыром и молоком" },
+    { "user": "ivan", "recipe": "Паста Помодоро" },
+    { "user": "ivan", "recipe": "Салат с курицей и пармезаном" },
+    { "user": "anna", "recipe": "Фриттата с сыром" },
+    { "user": "dmitry", "recipe": "Куриная паста с пармезаном" },
+    { "user": "sveta", "recipe": "Говядина с томатами и спагетти" },
+    { "user": "nikita", "recipe": "Салат с пармезаном и томатами" },
+    { "user": "elena", "recipe": "Куриный Цезарь" },
+    { "user": "sergey", "recipe": "Омлет с томатами и пармезаном" },
+    { "user": "tatiana", "recipe": "Куриная паста с томатами" }
   ],
   "shopping_cart": [
-    { "user": "vasya", "recipe": "Паста Болоньезе" }
+    { "user": "vasya", "recipe": "Паста Болоньезе" },
+    { "user": "olga", "recipe": "Паста Помодоро" },
+    { "user": "petr", "recipe": "Паста с говядиной" },
+    { "user": "ivan", "recipe": "Говядина с пастой и сыром" },
+    { "user": "anna", "recipe": "Салат романо с курицей" },
+    { "user": "dmitry", "recipe": "Паста с томатным соусом" },
+    { "user": "sveta", "recipe": "Салат с курицей и томатами" },
+    { "user": "nikita", "recipe": "Куриная паста с пармезаном" },
+    { "user": "elena", "recipe": "Паста с курицей и сыром" },
+    { "user": "sergey", "recipe": "Омлет с томатами" },
+    { "user": "tatiana", "recipe": "Говядина с томатами и спагетти" }
   ],
   "subscriptions": [
-    { "user": "vasya", "author": "masha" }
+    { "user": "vasya", "author": "masha" },
+    { "user": "olga", "author": "masha" },
+    { "user": "petr", "author": "olga" },
+    { "user": "ivan", "author": "sergey" },
+    { "user": "anna", "author": "masha" },
+    { "user": "dmitry", "author": "sergey" },
+    { "user": "sveta", "author": "elena" },
+    { "user": "nikita", "author": "dmitry" },
+    { "user": "elena", "author": "tatiana" },
+    { "user": "sergey", "author": "nikita" },
+    { "user": "tatiana", "author": "olga" }
   ]
 }
 
