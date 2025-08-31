@@ -60,6 +60,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend/
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
   
@@ -68,7 +69,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up nodeJS
-      usesL actions/setup-node@v3
+      uses: actions/setup-node@v3
       with:
         node-version: 21
     - name: Install dependencies
@@ -77,8 +78,8 @@ jobs:
         npm ci
     - name: Test frontend
       run: |
-      cd frontend/
-      npm run test
+        cd frontend/
+        npm run test
 
   build_frontend_and_push_to_docker_hub:
     name: Push frontend Docker image to DockerHub
@@ -99,7 +100,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./frontend/
-          push: ./frontend/
+          file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend:latest
   
@@ -111,7 +112,7 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-action@v2
+        uses: docker/setup-buildx-action@v2
       - name: Login to Docker
         uses: docker/login-action@v2
         with:
@@ -120,7 +121,8 @@ jobs:
       - name: Push to Dockerhub
         uses: docker/build-push-action@v4
         with:
-          context: ./nginx/
+          context: .
+          file: infra/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_nginx:latest
   
@@ -141,7 +143,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        source: 'docker-compose.production.yml'
+        source: 'infra/docker-compose.production.yml'
         target: 'foodgram'
 
     - name: Executing remote ssh commands to deploy
@@ -150,14 +152,14 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSHPRASE }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           cd foodgram
-          sudo docker compose -f docker-compose.production.yml pull
-          sudo docker compose -f docker-compose.production.yml down
-          sudo docker compose -f docker-compose.production.yml up -d
-          sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-          sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
+          sudo docker compose -f infra/docker-compose.production.yml pull
+          sudo docker compose -f infra/docker-compose.production.yml down
+          sudo docker compose -f infra/docker-compose.production.yml up -d
+          sudo docker compose -f infra/docker-compose.production.yml exec backend python manage.py migrate
+          sudo docker compose -f infra/docker-compose.production.yml exec backend python manage.py collectstatic --noinput
     
     send_message:
       runs-on: ubuntu-latest

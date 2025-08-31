@@ -37,9 +37,6 @@ services:
   nginx:
     container_name: foodgram-proxy
     image: wassiliy/foodgram_nginx
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile
     ports:
       - "80:80"
     volumes:
