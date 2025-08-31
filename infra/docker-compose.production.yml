@@ -15,7 +15,7 @@ services:
 
   backend:
     container_name: foodgram-back
-    image: wassiliy/foodgram_backend
+    image: wasiliy/foodgram_backend
     env_file: ../.env
     volumes:
       - static:/static
@@ -28,7 +28,7 @@ services:
 
   frontend:
     container_name: foodgram-front
-    image: wassiliy/foodgram_frontend
+    image: wasiliy/foodgram_frontend
     volumes:
       - frontend_build:/app/result_build/
     command: sh -c "rm -rf /app/result_build/* && cp -r /app/build/* /app/result_build/ && tail -f /dev/null"
@@ -36,7 +36,7 @@ services:
 
   nginx:
     container_name: foodgram-proxy
-    image: wassiliy/foodgram_nginx
+    image: wasiliy/foodgram_nginx
     ports:
       - "80:80"
     volumes:
