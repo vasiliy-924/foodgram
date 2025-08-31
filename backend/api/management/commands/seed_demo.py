@@ -24,7 +24,8 @@ DEFAULT_IMAGE_B64 = (
 class Command(BaseCommand):
     help = (
         'Заполняет БД тестовыми данными из директории data/.\n'
-        '- Импортирует ингредиенты, теги, пользователей, рецепты (с картинками)\n'
+        '- Импортирует ингредиенты, теги, пользователей,\n'
+        '  рецепты (с картинками)\n'
         '  и связи (подписки, избранное, список покупок).\n'
         'Запуск: python manage.py seed_demo\n'
         'Повторный запуск безопасен (idempotent).'
@@ -35,8 +36,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            # Предпочтительно использовать /data внутри контейнера,
-            # иначе fallback на локальный путь BASE_DIR/../data
             container_data = '/data'
             if os.path.isdir(container_data):
                 data_dir = container_data
@@ -44,10 +43,8 @@ class Command(BaseCommand):
                 data_dir = os.path.abspath(
                     os.path.join(settings.BASE_DIR, '..', 'data')
                 )
-            # 1) Ингредиенты
             ingredients_created = self._ensure_ingredients(data_dir)
 
-            # 2) Остальные данные
             users = self._load_json(os.path.join(data_dir, 'users.json'))
             tags = self._load_json(os.path.join(data_dir, 'tags.json'))
             recipes = self._load_json(os.path.join(data_dir, 'recipes.json'))
@@ -76,9 +73,6 @@ class Command(BaseCommand):
         with open(path, encoding='utf-8') as f:
             return json.load(f)
 
-    # endregion
-
-    # region ingredients
     def _ensure_ingredients(self, data_dir: str) -> int:
         json_path = os.path.join(data_dir, 'ingredients.json')
         csv_path = os.path.join(data_dir, 'ingredients.csv')
@@ -87,7 +81,6 @@ class Command(BaseCommand):
         rows: List[Dict] = []
         if os.path.exists(json_path):
             data: List[Dict] = self._load_json(json_path) or []
-            # ensure list of dicts
             rows = list(data) if isinstance(data, list) else []
         elif os.path.exists(csv_path):
             with open(csv_path, encoding='utf-8') as csvfile:
@@ -116,9 +109,6 @@ class Command(BaseCommand):
 
         return created
 
-    # endregion
-
-    # region users
     def _ensure_users(self, users: Optional[List[Dict]]) -> int:
         if not users:
             users = [
@@ -163,9 +153,6 @@ class Command(BaseCommand):
                     user.save(update_fields=['password'])
         return created_count
 
-    # endregion
-
-    # region tags
     def _ensure_tags(self, tags: Optional[List[Dict]]) -> int:
         if not tags:
             tags = [
@@ -195,9 +182,6 @@ class Command(BaseCommand):
                 created_count += 1
         return created_count
 
-    # endregion
-
-    # region recipes
     def _ensure_recipes(
         self,
         recipes: Optional[List[Dict]],
@@ -223,7 +207,6 @@ class Command(BaseCommand):
             if created:
                 created_count += 1
 
-            # image (единая стратегия)
             self._assign_image_auto(
                 recipe=recipe,
                 data_dir=data_dir,
@@ -231,14 +214,12 @@ class Command(BaseCommand):
                 image_path=r.get('image'),
             )
 
-            # tags
             tag_slugs = r.get('tags') or []
             if tag_slugs:
                 tags = list(Tag.objects.filter(slug__in=tag_slugs))
                 if tags:
                     recipe.tags.set(tags)
 
-            # ingredients
             items = r.get('ingredients') or []
             for item in items:
                 ing = self._find_ingredient(
@@ -313,13 +294,9 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             return None
 
-    # endregion
-
-    # region interactions
     def _ensure_interactions(self, data: Optional[Dict]) -> Dict[str, int]:
         created = {'favorites': 0, 'shopping_cart': 0, 'subscriptions': 0}
         if not data:
-            # Добавим немного связей по умолчанию
             data = {
                 'favorites': [
                     {'user': 'vasya', 'recipe': 'Омлет с сыром'},
@@ -420,7 +397,11 @@ class Command(BaseCommand):
                 suggested_name=(self._slugify_filename(recipe.name) + '.png'),
             )
 
-    def _find_photo_by_name(self, name: Optional[str], photos_dir: str) -> Optional[str]:
+    def _find_photo_by_name(
+        self,
+        name: Optional[str],
+        photos_dir: str,
+    ) -> Optional[str]:
         """
         Ищет файл изображения в каталоге photos, соответств названию рецепта.
         Порядок:
@@ -438,18 +419,15 @@ class Command(BaseCommand):
             for ext in exts:
                 yield os.path.join(photos_dir, f"{stem}{ext}")
 
-        # 1) exact name
         for path in candidates_for(name):
             if os.path.exists(path):
                 return path
 
-        # 2) slug variant
         slug = self._slugify_filename(name)
         for path in candidates_for(slug):
             if os.path.exists(path):
                 return path
 
-        # 3) scan directory
         try:
             for fname in os.listdir(photos_dir):
                 base, ext = os.path.splitext(fname)
