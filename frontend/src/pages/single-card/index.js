@@ -39,7 +39,7 @@ const SingleCard = ({ loadItem, updateOrders }) => {
       .copyRecipeLink({ id })
       .then(({ "short-link": shortLink }) => {
         navigator.clipboard
-          .writeText(shortLink)
+          .writeText(`${window.location.origin}/recipes/${id}`)
           .then(() => {
             setNotificationPosition("40px");
             setTimeout(() => {
@@ -52,7 +52,7 @@ const SingleCard = ({ loadItem, updateOrders }) => {
              * поэтому добавил отдельную плашку на этот случай
              */
             setNotificationError({
-              text: `Ваша ссылка: ${shortLink}`,
+              text: `Ваша ссылка: ${window.location.origin}/recipes/${id}`,
               position: "40px",
             });
           });
