@@ -8,5 +8,6 @@ class IngredientAdmin(admin.ModelAdmin):
     """Отображение ингредиентов и поиск по названию в админ-панели."""
 
     list_display = ('id', 'name', 'measurement_unit')
+    list_display_links = ('id', 'name')
     search_fields = ('name',)
     ordering = ('name',)

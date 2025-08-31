@@ -9,6 +9,7 @@ class RecipeAdmin(admin.ModelAdmin):
     """Отображение рецептов и фильтрация по тегам в админке."""
 
     list_display = ('id', 'name', 'author', 'favorites_count')
+    list_display_links = ('id', 'name')
     search_fields = ('name', 'author__username')
     list_filter = ('tags',)
     readonly_fields = ('favorites_count',)
@@ -27,3 +28,4 @@ class IngredientInRecipeAdmin(admin.ModelAdmin):
     """Отображение ингредиентов с количеством внутри рецепта в админке."""
 
     list_display = ('id', 'recipe', 'ingredient', 'amount')
+    list_display_links = ('id', 'recipe')

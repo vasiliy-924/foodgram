@@ -14,3 +14,29 @@ class UserAdmin(BaseUserAdmin):
     )
     list_display_links = ('username', 'email')
     search_fields = ('username', 'email', 'first_name', 'last_name')
+
+    fieldsets = BaseUserAdmin.fieldsets + (
+        (
+            'Дополнительно',
+            {
+                'fields': (
+                    'role',
+                    'avatar',
+                )
+            }
+        ),
+    )
+
+    add_fieldsets = (
+        (
+            None,
+            {
+                'classes': ('wide',),
+                'fields': (
+                    'username', 'password1', 'password2',
+                    'email', 'first_name', 'last_name',
+                    'role', 'avatar',
+                ),
+            },
+        ),
+    )

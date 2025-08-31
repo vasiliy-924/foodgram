@@ -8,6 +8,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     """Отображение избранных рецептов пользователей в админке."""
 
     list_display = ('user', 'recipe')
+    list_display_links = ('recipe',)
     search_fields = ('user__username', 'recipe__name')
 
 
@@ -16,6 +17,7 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     """Отображение списка покупок пользователей в админке."""
 
     list_display = ('user', 'recipe')
+    list_display_links = ('recipe',)
     search_fields = ('user__username', 'recipe__name')
 
 

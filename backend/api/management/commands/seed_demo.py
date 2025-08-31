@@ -422,7 +422,7 @@ class Command(BaseCommand):
 
     def _find_photo_by_name(self, name: Optional[str], photos_dir: str) -> Optional[str]:
         """
-        Ищет файл изображения в каталоге photos, соответствующий названию рецепта.
+        Ищет файл изображения в каталоге photos, соответств названию рецепта.
         Порядок:
         1) Точное совпадение базового имени: "<name>.<ext>"
         2) Слаг по названию: "<slugified>.<ext>"
