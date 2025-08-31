@@ -145,6 +145,12 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 6,
 }
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://thunderfoodgram.hopto.org',
+    'https://89.169.177.177',
+]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
