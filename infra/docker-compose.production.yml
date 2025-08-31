@@ -1,0 +1,52 @@
+volumes:
+  pg_data:
+  static:
+  media:
+  frontend_build:
+
+services:
+  db:
+    container_name: foodgram-db
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+
+  backend:
+    container_name: foodgram-back
+    image: wassiliy/foodgram_backend
+    env_file: .env
+    volumes:
+      - static:/static
+      - media:/app/media
+      - ../data:/data
+    depends_on:
+      - db
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 foodgram_backend.wsgi"
+    restart: always
+
+  frontend:
+    container_name: foodgram-front
+    image: wassiliy/foodgram_frontend
+    volumes:
+      - frontend_build:/app/result_build/
+    command: sh -c "rm -rf /app/result_build/* && cp -r /app/build/* /app/result_build/ && tail -f /dev/null"
+    restart: always
+
+  nginx:
+    container_name: foodgram-proxy
+    image: wassiliy/foodgram_nginx
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - frontend_build:/usr/share/nginx/html/app/
+      - static:/static
+      - media:/app/media
+    depends_on:
+      - backend
+      - frontend
+    restart: always
