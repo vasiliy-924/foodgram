@@ -38,7 +38,7 @@ services:
     container_name: foodgram-proxy
     image: wasiliy/foodgram_nginx
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - frontend_build:/usr/share/nginx/html/app/
       - static:/static
