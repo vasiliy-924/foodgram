@@ -1,4 +1,4 @@
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -9,6 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.urls import reverse
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
@@ -354,8 +355,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         """Возвращает короткую ссылку на рецепт."""
         recipe = self.get_object()
-        short_link = f'https://foodgram.example.org/s/{recipe.id}'
-        return Response({'short-link': short_link})
+        short_path = reverse(
+            'recipe-short-link',
+            kwargs={'short_id': recipe.id},
+        )
+        absolute_url = (
+            request.build_absolute_uri(short_path)
+            if request else short_path
+        )
+        return Response({'short-link': absolute_url})
 
     @action(
         detail=False,
