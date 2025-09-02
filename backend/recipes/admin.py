@@ -27,6 +27,13 @@ class IngredientInRecipeInline(admin.TabularInline):
     extra = 0
     min_num = 1
     validate_min = True
+    fields = ('ingredient', 'measurement_unit', 'amount')
+    readonly_fields = ('measurement_unit',)
+
+    @admin.display(description='Ед. изм.')
+    def measurement_unit(self, obj):
+        ingredient = getattr(obj, 'ingredient', None)
+        return getattr(ingredient, 'measurement_unit', '')
 
 
 @admin.register(Recipe)
@@ -53,8 +60,13 @@ class RecipeAdmin(admin.ModelAdmin):
 class IngredientInRecipeAdmin(admin.ModelAdmin):
     """Отображение ингредиентов с количеством внутри рецепта в админке."""
 
-    list_display = ('id', 'recipe', 'ingredient', 'amount')
+    list_display = ('id', 'recipe', 'ingredient', 'measurement_unit', 'amount')
     list_display_links = ('id', 'recipe')
+
+    @admin.display(description='Ед. изм.')
+    def measurement_unit(self, obj):
+        ingredient = getattr(obj, 'ingredient', None)
+        return getattr(ingredient, 'measurement_unit', '')
 
 
 @admin.register(Tag)
