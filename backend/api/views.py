@@ -8,6 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
@@ -23,6 +24,7 @@ from api.serializers import (
     RecipeMinifiedSerializer,
     UserWithRecipesSerializer,
 )
+from api.filters import RecipeFilter, NameSearchFilter
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -84,14 +86,9 @@ class IngredientViewSet(
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
-
-    def get_queryset(self):
-        """Возвращает queryset с фильтром по префиксу name (istartswith)."""
-        qs = Ingredient.objects.all().order_by('id')
-        name = self.request.query_params.get('name')
-        if name:
-            qs = qs.filter(Q(name__istartswith=name))
-        return qs
+    queryset = Ingredient.objects.all().order_by('id')
+    filter_backends = (NameSearchFilter,)
+    search_fields = ('^name',)
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -258,36 +255,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """CRUD для рецептов и дополнительные действия (лайки, корзина)."""
 
     permission_classes = (IsAuthorOrReadOnly,)
-
-    def get_queryset(self):
-        """
-        Возвращает queryset с фильтрами по автору, тегам, избранному и корзине
-        """
-        qs = (
-            Recipe.objects.all()
-            .select_related('author')
-            .prefetch_related('tags', 'ingredient_in_recipes__ingredient')
-        )
-        request = self.request
-        author_id = request.query_params.get('author')
-        if author_id and str(author_id).isdigit():
-            qs = qs.filter(author_id=int(author_id))
-        tags = request.query_params.getlist('tags')
-        if tags:
-            qs = qs.filter(tags__slug__in=tags).distinct()
-        is_favorited = request.query_params.get('is_favorited')
-        if (
-            is_favorited in ('1', 'true', 'True')
-            and request.user.is_authenticated
-        ):
-            qs = qs.filter(in_favorites__user=request.user)
-        is_in_cart = request.query_params.get('is_in_shopping_cart')
-        if (
-            is_in_cart in ('1', 'true', 'True')
-            and request.user.is_authenticated
-        ):
-            qs = qs.filter(in_carts__user=request.user)
-        return qs
+    queryset = (
+        Recipe.objects.all()
+        .select_related('author')
+        .prefetch_related('tags', 'ingredient_in_recipes__ingredient')
+    )
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         """Выбирает сериализатор: чтение для list/retrieve, иначе запись."""
