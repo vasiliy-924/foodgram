@@ -7,13 +7,7 @@ from users.validators import validate_username_value
 
 
 class User(AbstractUser):
-    """Модель пользователя с ролями и дополнительными полями."""
-
-    class Roles(models.TextChoices):
-        """Роли пользователя."""
-
-        USER = 'user', 'Пользователь'
-        ADMIN = 'admin', 'Администратор'
+    """Модель пользователя."""
 
     first_name = models.CharField(
         verbose_name='имя',
@@ -42,26 +36,18 @@ class User(AbstractUser):
         unique=True,
         blank=False
     )
-    role = models.CharField(
-        verbose_name='роль',
-        max_length=max(len(role) for role, _ in Roles.choices),
-        choices=Roles.choices,
-        default=Roles.USER
-    )
     avatar = models.ImageField(
         verbose_name='аватар пользователя',
         blank=True
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('username',)
-
-    @property
-    def is_admin(self):
-        """Проверяет, является ли пользователь администратором."""
-        return self.role == self.Roles.ADMIN or self.is_superuser
 
     def __str__(self):
         """Строковое представление пользователя."""

@@ -6,7 +6,7 @@ class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
         """Проверяет, является ли пользователь администратором."""
-        return request.user.is_authenticated and request.user.is_admin
+        return request.user.is_authenticated and request.user.is_superuser
 
 
 class IsAuthorOrReadOnly(BasePermission):
@@ -23,7 +23,7 @@ class IsAuthorOrReadOnly(BasePermission):
         return (
             request.method in SAFE_METHODS
             or obj.author == request.user
-            or request.user.is_admin
+            or request.user.is_superuser
         )
 
 
@@ -33,6 +33,5 @@ class IsAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         """Проверяет права на уровне запроса для админа или только чтение."""
         return request.method in SAFE_METHODS or (
-            request.user.is_authenticated
-            and (request.user.is_admin or request.user.is_superuser)
+            request.user.is_authenticated and request.user.is_superuser
         )

@@ -218,20 +218,18 @@ class UsersViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, pk=None):
         """Оформляет подписку на автора, если это не сам пользователь."""
         author = self.get_object()
-        # Полагаться на модельную валидацию: самоподписка запретится в clean()
-        if Subscription.objects.filter(
-            user=request.user,
-            author=author,
-        ).exists():
-            return Response(
-                {'detail': 'Подписка уже существует.'},
-                status=400,
-            )
-        try:
-            Subscription(user=request.user, author=author).save()
-        except DjangoValidationError:
+        if author == request.user:
             return Response(
                 {'detail': 'Нельзя подписаться на себя.'},
+                status=400,
+            )
+        _, created = Subscription.objects.get_or_create(
+            user=request.user,
+            author=author,
+        )
+        if not created:
+            return Response(
+                {'detail': 'Подписка уже существует.'},
                 status=400,
             )
         serializer = UserWithRecipesSerializer(

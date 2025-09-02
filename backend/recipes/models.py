@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
 from foodgram_backend.constants import (
     INGREDIENT_NAME_MAX_LENGTH,
@@ -82,7 +84,8 @@ class Recipe(models.Model):
         verbose_name='Описание'
     )
     cooking_time = models.PositiveIntegerField(
-        verbose_name='Время приготовления (мин)'
+        verbose_name='Время приготовления (мин)',
+        validators=(MinValueValidator(1),)
     )
     tags = models.ManyToManyField(
         Tag,
@@ -221,15 +224,9 @@ class Subscription(models.Model):
         )
 
     def clean(self):
-        """Запрещает самоподписку на уровне модели."""
-        if self.user is not None and self.author is not None:
-            if self.user == self.author:
-                from django.core.exceptions import ValidationError
-                raise ValidationError({
-                    'author': 'Нельзя подписаться на себя.'
-                })
-
-    def save(self, *args, **kwargs):
-        """Выполняет полную валидацию перед сохранением."""
-        self.full_clean()
-        return super().save(*args, **kwargs)
+        """Запрещает подписку пользователя на самого себя (валидация формы)."""
+        same_user = self.user is not None and self.author is not None and (
+            self.user == self.author
+        )
+        if same_user:
+            raise ValidationError({'author': 'Нельзя подписаться на себя.'})

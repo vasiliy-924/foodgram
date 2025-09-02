@@ -22,6 +22,13 @@ class IngredientAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
 
+class IngredientInRecipeInline(admin.TabularInline):
+    model = IngredientInRecipe
+    extra = 0
+    min_num = 1
+    validate_min = True
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     """Отображение рецептов и фильтрация по тегам в админке."""
@@ -31,6 +38,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username')
     list_filter = ('tags',)
     readonly_fields = ('favorites_count',)
+    inlines = (IngredientInRecipeInline,)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

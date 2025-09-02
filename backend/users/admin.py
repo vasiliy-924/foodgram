@@ -6,11 +6,11 @@ from users.models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Админка для модели User с расширенными возможностями."""
+    """Админка для модели User."""
 
     list_display = (
         'first_name', 'last_name', 'username',
-        'email', 'role', 'avatar'
+        'email', 'avatar'
     )
     list_display_links = ('username', 'email')
     search_fields = ('username', 'email', 'first_name', 'last_name')
@@ -20,7 +20,6 @@ class UserAdmin(BaseUserAdmin):
             'Дополнительно',
             {
                 'fields': (
-                    'role',
                     'avatar',
                 )
             }
@@ -35,7 +34,7 @@ class UserAdmin(BaseUserAdmin):
                 'fields': (
                     'username', 'password1', 'password2',
                     'email', 'first_name', 'last_name',
-                    'role', 'avatar',
+                    'avatar',
                 ),
             },
         ),
