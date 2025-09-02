@@ -29,11 +29,7 @@ INSTALLED_APPS = [
 
     # Приложения
     'api.apps.ApiConfig',
-    'ingredients.apps.IngredientsConfig',
-    'interactions.apps.InteractionsConfig',
-    'pages.apps.PagesConfig',
     'recipes.apps.RecipesConfig',
-    'tags.apps.TagsConfig',
     'users.apps.UsersConfig'
 ]
 

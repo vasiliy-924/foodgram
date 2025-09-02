@@ -15,7 +15,9 @@ urlpatterns = [
     ),
     path(
         'api/docs/',
-        RedirectView.as_view(url=static('redoc.html'), permanent=False),
+        RedirectView.as_view(
+            url=f"{settings.STATIC_URL}redoc.html",
+            permanent=False),
         name='redoc'
     ),
 ]

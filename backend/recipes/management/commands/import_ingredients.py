@@ -5,7 +5,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from ingredients.models import Ingredient
+from recipes.models import Ingredient
 
 
 class Command(BaseCommand):

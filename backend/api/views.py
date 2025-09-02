@@ -23,10 +23,15 @@ from api.serializers import (
     RecipeMinifiedSerializer,
     UserWithRecipesSerializer,
 )
-from ingredients.models import Ingredient
-from interactions.models import Favorite, ShoppingCart, Subscription
-from recipes.models import Recipe, IngredientInRecipe
-from tags.models import Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Subscription,
+    Tag
+)
 from users.models import User
 
 
@@ -213,18 +218,20 @@ class UsersViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, pk=None):
         """Оформляет подписку на автора, если это не сам пользователь."""
         author = self.get_object()
-        if author == request.user:
-            return Response(
-                {'detail': 'Нельзя подписаться на себя.'},
-                status=400,
-            )
-        _, created = Subscription.objects.get_or_create(
+        # Полагаться на модельную валидацию: самоподписка запретится в clean()
+        if Subscription.objects.filter(
             user=request.user,
             author=author,
-        )
-        if not created:
+        ).exists():
             return Response(
                 {'detail': 'Подписка уже существует.'},
+                status=400,
+            )
+        try:
+            Subscription(user=request.user, author=author).save()
+        except DjangoValidationError:
+            return Response(
+                {'detail': 'Нельзя подписаться на себя.'},
                 status=400,
             )
         serializer = UserWithRecipesSerializer(

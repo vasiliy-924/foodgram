@@ -7,10 +7,15 @@ from django.core.files.base import ContentFile
 from rest_framework import serializers
 
 from api.services import build_absolute_file_url
-from ingredients.models import Ingredient
-from interactions.models import Favorite, ShoppingCart, Subscription
-from recipes.models import IngredientInRecipe, Recipe
-from tags.models import Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Subscription,
+    Tag
+)
 
 
 User = get_user_model()
@@ -184,7 +189,6 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 # Сериализаторы рецептов
-
 class Base64ImageField(serializers.ImageField):
     """Поле изображения, принимающее и валидирующее base64-строку."""
 

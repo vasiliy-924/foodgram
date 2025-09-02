@@ -8,10 +8,15 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.management import BaseCommand, CommandError
 
-from ingredients.models import Ingredient
-from interactions.models import Favorite, ShoppingCart, Subscription
-from recipes.models import IngredientInRecipe, Recipe
-from tags.models import Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Subscription,
+    Tag
+)
 from users.models import User
 
 
