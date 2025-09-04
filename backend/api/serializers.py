@@ -7,15 +7,19 @@ from django.core.files.base import ContentFile
 from rest_framework import serializers
 
 from api.services import build_absolute_file_url
+from foodgram_backend.constants import (
+    MIN_COOKING_TIME_MINUTES,
+    MIN_INGREDIENT_AMOUNT,
+)
 from recipes.models import (
     Favorite,
     Ingredient,
     IngredientInRecipe,
     Recipe,
     ShoppingCart,
-    Subscription,
     Tag
 )
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -243,7 +247,7 @@ class IngredientAmountWriteSerializer(serializers.Serializer):
     """Элемент списка ингредиентов при создании/редактировании рецепта."""
 
     id = serializers.IntegerField()
-    amount = serializers.IntegerField(min_value=1)
+    amount = serializers.IntegerField(min_value=MIN_INGREDIENT_AMOUNT)
 
     def create(self, validated_data):
         """Возвращает валидированные данные без создания объектов."""
@@ -365,9 +369,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 'tags': ['Теги не должны повторяться.']
             })
 
-        if attrs.get('cooking_time', 0) < 1:
+        if attrs.get('cooking_time', 0) < MIN_COOKING_TIME_MINUTES:
             raise serializers.ValidationError({
-                'cooking_time': ['Значение должно быть >= 1.']
+                'cooking_time': [
+                    f'Значение должно быть >= {MIN_COOKING_TIME_MINUTES}.'
+                ]
             })
         return attrs
 
@@ -433,7 +439,7 @@ class UserWithRecipesSerializer(UserSerializer):
                 limit = int(request.query_params.get('recipes_limit') or 0)
             except Exception:
                 limit = 0
-        qs = Recipe.objects.filter(author=obj).order_by('-id')
+        qs = Recipe.objects.filter(author=obj).order_by('-created_at', '-id')
         if limit and limit > 0:
             qs = qs[:limit]
         return RecipeMinifiedSerializer(

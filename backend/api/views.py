@@ -3,13 +3,14 @@ from django.http import HttpResponse
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from rest_framework import generics, mixins, status, viewsets
+from rest_framework import generics, mixins, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.urls import reverse
+from http import HTTPStatus
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
@@ -32,9 +33,9 @@ from recipes.models import (
     IngredientInRecipe,
     Recipe,
     ShoppingCart,
-    Subscription,
     Tag
 )
+from users.models import Subscription
 from users.models import User
 
 
@@ -61,7 +62,7 @@ class TokenLogoutView(generics.GenericAPIView):
     def post(self, request):
         """Удаляет все токены текущего пользователя и возвращает 204."""
         Token.objects.filter(user=request.user).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTPStatus.NO_CONTENT)
 
 
 class TagViewSet(
@@ -114,15 +115,15 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         """Запрещает полный update пользователей (405)."""
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
     def partial_update(self, request, *args, **kwargs):
         """Запрещает частичный update пользователей (405)."""
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
         """Запрещает удаление пользователей (405)."""
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
     @action(
         detail=False,
@@ -152,15 +153,18 @@ class UsersViewSet(viewsets.ModelViewSet):
         if not request.user.check_password(current):
             return Response(
                 {'current_password': ['Неверный пароль.']},
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
         try:
             validate_password(new, user=request.user)
         except DjangoValidationError as e:
-            return Response({'new_password': list(e.messages)}, status=400)
+            return Response(
+                {'new_password': list(e.messages)},
+                status=HTTPStatus.BAD_REQUEST,
+            )
         request.user.set_password(new)
         request.user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTPStatus.NO_CONTENT)
 
     @action(
         detail=False,
@@ -186,7 +190,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         """Удаляет аватар текущего пользователя, если он установлен."""
         if request.user.avatar:
             request.user.avatar.delete(save=True)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTPStatus.NO_CONTENT)
 
     @action(
         detail=False,
@@ -196,7 +200,11 @@ class UsersViewSet(viewsets.ModelViewSet):
     )
     def subscriptions(self, request):
         """Возвращает список авторов, на которых подписан пользователь."""
-        qs = User.objects.filter(subscribers__user=request.user).distinct()
+        qs = (
+            User.objects
+            .filter(author_subscriptions__user=request.user)
+            .distinct()
+        )
         page = self.paginate_queryset(qs)
         serializer = UserWithRecipesSerializer(
             page or qs,
@@ -219,7 +227,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         if author == request.user:
             return Response(
                 {'detail': 'Нельзя подписаться на себя.'},
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
         _, created = Subscription.objects.get_or_create(
             user=request.user,
@@ -228,13 +236,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         if not created:
             return Response(
                 {'detail': 'Подписка уже существует.'},
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
         serializer = UserWithRecipesSerializer(
             author,
             context={'request': request},
         )
-        return Response(serializer.data, status=201)
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
@@ -247,9 +255,9 @@ class UsersViewSet(viewsets.ModelViewSet):
         if not deleted:
             return Response(
                 {'detail': 'Не была оформлена подписка.'},
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
-        return Response(status=204)
+        return Response(status=HTTPStatus.NO_CONTENT)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -287,13 +295,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe
         )
         if not created:
-            return Response({'detail': 'Уже в избранном.'}, status=400)
+            return Response(
+                {'detail': 'Уже в избранном.'},
+                status=HTTPStatus.BAD_REQUEST,
+            )
         return Response(
             RecipeMinifiedSerializer(
                 recipe,
                 context={'request': request}
             ).data,
-            status=201
+            status=HTTPStatus.CREATED
         )
 
     @favorite.mapping.delete
@@ -305,8 +316,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe,
         ).delete()
         if not deleted:
-            return Response({'detail': 'Не было в избранном.'}, status=400)
-        return Response(status=204)
+            return Response(
+                {'detail': 'Не было в избранном.'},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+        return Response(status=HTTPStatus.NO_CONTENT)
 
     @action(
         detail=True,
@@ -322,13 +336,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe
         )
         if not created:
-            return Response({'detail': 'Уже в списке покупок.'}, status=400)
+            return Response(
+                {'detail': 'Уже в списке покупок.'},
+                status=HTTPStatus.BAD_REQUEST,
+            )
         return Response(
             RecipeMinifiedSerializer(
                 recipe,
                 context={'request': request}
             ).data,
-            status=201
+            status=HTTPStatus.CREATED
         )
 
     @add_to_cart.mapping.delete
@@ -342,9 +359,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if not deleted:
             return Response(
                 {'detail': 'Не было в списке покупок.'},
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
-        return Response(status=204)
+        return Response(status=HTTPStatus.NO_CONTENT)
 
     @action(
         detail=True,
@@ -375,7 +392,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Формирует и отдает txt-файл со списком покупок пользователя."""
         ingredients = (
             IngredientInRecipe.objects
-            .filter(recipe__in_carts__user=request.user)
+            .filter(recipe__shoppingcart__user=request.user)
             .values('ingredient__name', 'ingredient__measurement_unit')
             .annotate(total_amount=Sum('amount'))
             .order_by('ingredient__name')

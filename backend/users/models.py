@@ -1,23 +1,29 @@
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
 
-from foodgram_backend.constants import STR_MAX_LENGTH, EMAIL_MAX_LENGTH
+from foodgram_backend.constants import (
+    STR_MAX_LENGTH,
+    EMAIL_MAX_LENGTH,
+    STR_REPRESENTATION_MAX_LENGTH,
+)
 from users.validators import validate_username_value
 
 
 class User(AbstractUser):
     """Модель пользователя."""
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     first_name = models.CharField(
         verbose_name='имя',
-        max_length=STR_MAX_LENGTH,
-        blank=False
+        max_length=STR_MAX_LENGTH
     )
     last_name = models.CharField(
         verbose_name='фамилия',
-        max_length=STR_MAX_LENGTH,
-        blank=False
+        max_length=STR_MAX_LENGTH
     )
     username = models.CharField(
         verbose_name='никнейм',
@@ -27,22 +33,17 @@ class User(AbstractUser):
             f'Обязательно. Не более {STR_MAX_LENGTH} символов. '
             f'Только буквы, цифры и @/./+/-/_. '
         ),
-        validators=(validate_username_value,),
-        blank=False
+        validators=(validate_username_value,)
     )
     email = models.EmailField(
         verbose_name='email адрес',
         max_length=EMAIL_MAX_LENGTH,
-        unique=True,
-        blank=False
+        unique=True
     )
     avatar = models.ImageField(
         verbose_name='аватар пользователя',
         blank=True
     )
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -51,16 +52,48 @@ class User(AbstractUser):
 
     def __str__(self):
         """Строковое представление пользователя."""
-        return str(self.username)[:20]
+        return self.username[:STR_REPRESENTATION_MAX_LENGTH]
 
-    @property
-    def is_subscribed(self):
-        """Заглушка поля для сериализаторов (зависит от текущего пользов)."""
-        return False
 
-    def set_password(self, raw_password):
-        """Устанавливает пароль после проверки встроенными валидаторами."""
-        if raw_password is None:
-            return super().set_password(raw_password)
-        validate_password(raw_password, user=self)
-        return super().set_password(raw_password)
+class Subscription(models.Model):
+    """Подписка пользователя на автора рецептов."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Подписчик'
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='author_subscriptions',
+        verbose_name='Автор'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_subscription'
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('author')),
+                name='prevent_self_subscription'
+            ),
+        )
+
+    def clean(self): 
+        """Запрещает подписку пользователя на самого себя (валидация формы).""" 
+        same_user = self.user is not None and self.author is not None and ( 
+            self.user == self.author 
+        ) 
+        if same_user: 
+            raise ValidationError({'author': 'Нельзя подписаться на себя.'}) 
+
+
+    def __str__(self):
+        """Возвращает отображаемое имя автора подписки."""
+        return str(self.author)[:STR_REPRESENTATION_MAX_LENGTH]

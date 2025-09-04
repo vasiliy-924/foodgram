@@ -418,7 +418,7 @@ class Command(BaseCommand):
         if not name or not os.path.isdir(photos_dir):
             return None
 
-        exts = ('.jpg', '.jpeg', '.png', '.webp')
+        exts = ('.jpg', '.jpeg', '.png')
 
         def candidates_for(stem: str):
             for ext in exts:

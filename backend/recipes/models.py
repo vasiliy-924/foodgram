@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
 from foodgram_backend.constants import (
@@ -8,7 +7,10 @@ from foodgram_backend.constants import (
     MEASUREMENT_UNIT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
     SLUG_MAX_LENGTH,
-    TAG_NAME_MAX_LENGTH
+    STR_REPRESENTATION_MAX_LENGTH,
+    TAG_NAME_MAX_LENGTH,
+    MIN_COOKING_TIME_MINUTES,
+    MIN_INGREDIENT_AMOUNT
 )
 
 
@@ -37,7 +39,7 @@ class Ingredient(models.Model):
 
     def __str__(self):
         """Возвращает отображаемое имя ингредиента."""
-        return str(self.name)
+        return self.name[:STR_REPRESENTATION_MAX_LENGTH]
 
 
 class Tag(models.Model):
@@ -60,7 +62,8 @@ class Tag(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return str(self.name)
+        """Возвращает отображаемое имя тега."""
+        return self.name[:STR_REPRESENTATION_MAX_LENGTH]
 
 
 class Recipe(models.Model):
@@ -83,9 +86,14 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='Описание'
     )
+    created_at = models.DateTimeField(
+        verbose_name='Дата публикации',
+        auto_now_add=True,
+        db_index=True
+    )
     cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления (мин)',
-        validators=(MinValueValidator(1),)
+        validators=(MinValueValidator(MIN_COOKING_TIME_MINUTES),)
     )
     tags = models.ManyToManyField(
         Tag,
@@ -102,11 +110,11 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('-id',)
+        ordering = ('-created_at', '-id')
 
     def __str__(self):
         """Возвращает отображаемое название рецепта."""
-        return str(self.name)
+        return self.name[:STR_REPRESENTATION_MAX_LENGTH]
 
 
 class IngredientInRecipe(models.Model):
@@ -125,7 +133,8 @@ class IngredientInRecipe(models.Model):
         verbose_name='Рецепт'
     )
     amount = models.PositiveIntegerField(
-        verbose_name='Количество'
+        verbose_name='Количество',
+        validators=(MinValueValidator(MIN_INGREDIENT_AMOUNT),)
     )
 
     class Meta:
@@ -138,22 +147,36 @@ class IngredientInRecipe(models.Model):
             ),
         )
 
+    def __str__(self):
+        """Возвращает отображаемое имя ингредиента в рецепте."""
+        return self.ingredient[:STR_REPRESENTATION_MAX_LENGTH]
 
-class Favorite(models.Model):
-    """Связь рецепта и пользователя в списке избранного."""
+
+class UserRecipeRelation(models.Model):
+    """Абстрактная связь пользователя и рецепта (избранное/покупки)."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='favorites',
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='in_favorites',
         verbose_name='Рецепт'
     )
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        """Уникальная строка за счет включения типа связи."""
+        text = f"{self._meta.verbose_name}: {self.recipe}"
+        return text[:STR_REPRESENTATION_MAX_LENGTH]
+
+
+class Favorite(UserRecipeRelation):
+    """Связь рецепта и пользователя в списке избранного."""
 
     class Meta:
         verbose_name = 'Избранное'
@@ -166,21 +189,8 @@ class Favorite(models.Model):
         )
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(UserRecipeRelation):
     """Позиция рецепта в списке покупок пользователя."""
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='shopping_cart',
-        verbose_name='Пользователь'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='in_carts',
-        verbose_name='Рецепт'
-    )
 
     class Meta:
         verbose_name = 'Позиция в списке покупок'
@@ -191,42 +201,3 @@ class ShoppingCart(models.Model):
                 name='unique_cart_item_per_user'
             ),
         )
-
-
-class Subscription(models.Model):
-    """Подписка пользователя на автора рецептов."""
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='subscriptions',
-        verbose_name='Подписчик'
-    )
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='subscribers',
-        verbose_name='Автор'
-    )
-
-    class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'author'),
-                name='unique_subscription'
-            ),
-            models.CheckConstraint(
-                check=~models.Q(user=models.F('author')),
-                name='prevent_self_subscription'
-            ),
-        )
-
-    def clean(self):
-        """Запрещает подписку пользователя на самого себя (валидация формы)."""
-        same_user = self.user is not None and self.author is not None and (
-            self.user == self.author
-        )
-        if same_user:
-            raise ValidationError({'author': 'Нельзя подписаться на себя.'})

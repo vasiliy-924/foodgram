@@ -1,5 +1,13 @@
 from django.contrib import admin
 from django.db.models import Count
+from django.utils.safestring import mark_safe
+from foodgram_backend.constants import (
+    ADMIN_INGREDIENT_INLINE_EXTRA,
+    ADMIN_INGREDIENT_INLINE_MIN_NUM,
+    ADMIN_RECIPE_IMAGE_WIDTH,
+    ADMIN_RECIPE_IMAGE_HEIGHT,
+)
+from recipes.filters import CookingTimeFilter
 
 from recipes.models import (
     Favorite,
@@ -7,7 +15,6 @@ from recipes.models import (
     IngredientInRecipe,
     Recipe,
     ShoppingCart,
-    Subscription,
     Tag
 )
 
@@ -24,8 +31,8 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class IngredientInRecipeInline(admin.TabularInline):
     model = IngredientInRecipe
-    extra = 0
-    min_num = 1
+    extra = ADMIN_INGREDIENT_INLINE_EXTRA
+    min_num = ADMIN_INGREDIENT_INLINE_MIN_NUM
     validate_min = True
     fields = ('ingredient', 'measurement_unit', 'amount')
     readonly_fields = ('measurement_unit',)
@@ -40,20 +47,47 @@ class IngredientInRecipeInline(admin.TabularInline):
 class RecipeAdmin(admin.ModelAdmin):
     """Отображение рецептов и фильтрация по тегам в админке."""
 
-    list_display = ('id', 'name', 'author', 'favorites_count')
+    list_display = (
+        'id',
+        'name',
+        'image_tag',
+        'author',
+        'tags_list',
+        'ingredients_list',
+        'favorites_count',
+    )
     list_display_links = ('id', 'name')
     search_fields = ('name', 'author__username')
-    list_filter = ('tags',)
+    list_filter = ('tags', CookingTimeFilter)
     readonly_fields = ('favorites_count',)
     inlines = (IngredientInRecipeInline,)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.annotate(favorites_count=Count('in_favorites'))
+        return (
+            qs.annotate(favorites_count=Count('favorite')).prefetch_related(
+                'tags', 'ingredients'
+            )
+        )
 
     @admin.display(description='В избранном')
     def favorites_count(self, obj):
-        return getattr(obj, 'favorites_count', obj.in_favorites.count())
+        return getattr(obj, 'favorites_count', obj.favorite_set.count())
+
+    @admin.display(description='Теги')
+    def tags_list(self, obj):
+        return ', '.join(obj.tags.values_list('name', flat=True))
+
+    @admin.display(description='Ингредиенты')
+    def ingredients_list(self, obj):
+        return ', '.join(obj.ingredients.values_list('name', flat=True))
+
+    @admin.display(description='Картинка')
+    def image_tag(self, obj):
+        return mark_safe(
+            f'<img src={obj.image.url} width="{ADMIN_RECIPE_IMAGE_WIDTH}" '
+            f'height="{ADMIN_RECIPE_IMAGE_HEIGHT}">'
+        )
 
 
 @admin.register(IngredientInRecipe)
@@ -95,11 +129,3 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     list_display_links = ('recipe',)
     search_fields = ('user__username', 'recipe__name')
-
-
-@admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
-    """Отображение подписок пользователей на авторов в админке."""
-
-    list_display = ('user', 'author')
-    search_fields = ('user__username', 'author__username')
