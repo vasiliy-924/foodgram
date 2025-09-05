@@ -2,6 +2,8 @@ asgiref==3.9.1
 Django==5.2.5
 django-filter==24.3
 djangorestframework==3.16.1
+drf-extra-fields==3.7.0
+djoser==2.3.1
 dotenv==0.9.9
 flake8==7.3.0
 mccabe==0.7.0

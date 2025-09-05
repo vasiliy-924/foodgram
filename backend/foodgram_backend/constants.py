@@ -1,7 +1,7 @@
 """Глобальные константы проекта."""
 
 # users
-STR_MAX_LENGTH = 150
+USER_FIELD_MAX_LENGTH = 150
 EMAIL_MAX_LENGTH = 254
 
 # tags

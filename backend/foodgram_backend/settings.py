@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'rest_framework.authtoken',
+    'djoser',
 
     # Приложения
     'api.apps.ApiConfig',

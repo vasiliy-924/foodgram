@@ -1,14 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsAdmin(BasePermission):
-    """Права доступа только для администраторов."""
-
-    def has_permission(self, request, view):
-        """Проверяет, является ли пользователь администратором."""
-        return request.user.is_authenticated and request.user.is_superuser
-
-
 class IsAuthorOrReadOnly(BasePermission):
     """Права доступа для автора, администратора или только чтение."""
 
@@ -24,14 +16,4 @@ class IsAuthorOrReadOnly(BasePermission):
             request.method in SAFE_METHODS
             or obj.author == request.user
             or request.user.is_superuser
-        )
-
-
-class IsAdminOrReadOnly(BasePermission):
-    """Права доступа только для админа или только чтение."""
-
-    def has_permission(self, request, view):
-        """Проверяет права на уровне запроса для админа или только чтение."""
-        return request.method in SAFE_METHODS or (
-            request.user.is_authenticated and request.user.is_superuser
         )

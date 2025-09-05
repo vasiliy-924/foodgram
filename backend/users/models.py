@@ -4,7 +4,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from foodgram_backend.constants import (
-    STR_MAX_LENGTH,
+    USER_FIELD_MAX_LENGTH,
     EMAIL_MAX_LENGTH,
     STR_REPRESENTATION_MAX_LENGTH,
 )
@@ -19,18 +19,18 @@ class User(AbstractUser):
 
     first_name = models.CharField(
         verbose_name='имя',
-        max_length=STR_MAX_LENGTH
+        max_length=USER_FIELD_MAX_LENGTH
     )
     last_name = models.CharField(
         verbose_name='фамилия',
-        max_length=STR_MAX_LENGTH
+        max_length=USER_FIELD_MAX_LENGTH
     )
     username = models.CharField(
         verbose_name='никнейм',
-        max_length=STR_MAX_LENGTH,
+        max_length=USER_FIELD_MAX_LENGTH,
         unique=True,
         help_text=(
-            f'Обязательно. Не более {STR_MAX_LENGTH} символов. '
+            f'Обязательно. Не более {USER_FIELD_MAX_LENGTH} символов. '
             f'Только буквы, цифры и @/./+/-/_. '
         ),
         validators=(validate_username_value,)

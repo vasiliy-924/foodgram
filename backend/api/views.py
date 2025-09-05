@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value, Count
 from django.http import HttpResponse
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -14,12 +14,12 @@ from http import HTTPStatus
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
-    TokenCreateSerializer,
+    #TokenCreateSerializer,
     TagSerializer,
     IngredientSerializer,
     UserSerializer,
-    UserCreateSerializer,
-    SetPasswordSerializer,
+    #UserCreateSerializer,
+    #SetPasswordSerializer,
     SetAvatarSerializer,
     RecipeReadSerializer,
     RecipeWriteSerializer,
@@ -98,6 +98,11 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all().order_by('id')
     http_method_names = ('get', 'post', 'put', 'delete')
+
+    def get_queryset(self):
+        """Аннотирует количество рецептов пользователя в recipes_count."""
+        base_qs = super().get_queryset()
+        return base_qs.annotate(recipes_count=Count('recipes'))
 
     def get_permissions(self):
         """Определяет права доступа в зависимости от действия."""
@@ -203,6 +208,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         qs = (
             User.objects
             .filter(author_subscriptions__user=request.user)
+            .annotate(recipes_count=Count('recipes'))
             .distinct()
         )
         page = self.paginate_queryset(qs)
@@ -264,11 +270,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """CRUD для рецептов и дополнительные действия (лайки, корзина)."""
 
     permission_classes = (IsAuthorOrReadOnly,)
-    queryset = (
-        Recipe.objects.all()
-        .select_related('author')
-        .prefetch_related('tags', 'ingredient_in_recipes__ingredient')
-    )
+    queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
@@ -277,6 +279,37 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
         return RecipeWriteSerializer
+
+    def get_queryset(self):
+        """Возвращает queryset с нужными префетчами и аннотациями флагов."""
+        base_qs = (
+            super()
+            .get_queryset()
+            .select_related('author')
+            .prefetch_related('tags', 'ingredient_in_recipes__ingredient')
+        )
+
+        request = getattr(self, 'request', None)
+        user = getattr(request, 'user', None)
+
+        if user and user.is_authenticated:
+            favorite_exists = Favorite.objects.filter(
+                user=user,
+                recipe=OuterRef('pk'),
+            )
+            cart_exists = ShoppingCart.objects.filter(
+                user=user,
+                recipe=OuterRef('pk'),
+            )
+            return base_qs.annotate(
+                is_favorited=Exists(favorite_exists),
+                is_in_shopping_cart=Exists(cart_exists),
+            )
+
+        return base_qs.annotate(
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField()),
+        )
 
     def perform_create(self, serializer):
         """Сохраняет рецепт, автора берет из сериализатора."""

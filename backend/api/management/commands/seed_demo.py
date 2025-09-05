@@ -14,10 +14,9 @@ from recipes.models import (
     IngredientInRecipe,
     Recipe,
     ShoppingCart,
-    Subscription,
     Tag
 )
-from users.models import User
+from users.models import User, Subscription
 
 
 DEFAULT_IMAGE_B64 = (
