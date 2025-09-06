@@ -149,7 +149,11 @@ class IngredientInRecipe(models.Model):
 
     def __str__(self):
         """Возвращает отображаемое имя ингредиента в рецепте."""
-        return self.ingredient[:STR_REPRESENTATION_MAX_LENGTH]
+        ingredient_name = getattr(
+            self.ingredient, 'name', str(self.ingredient)
+        )
+        text = f"{ingredient_name} - {self.amount}"
+        return text[:STR_REPRESENTATION_MAX_LENGTH]
 
 
 class UserRecipeRelation(models.Model):
