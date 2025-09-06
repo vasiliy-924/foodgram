@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count
-from rest_framework import serializers
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
 
 from api.services import build_absolute_file_url
 from foodgram_backend.constants import (
@@ -46,97 +46,6 @@ class SetAvatarSerializer(serializers.Serializer):
         return instance
 
 
-# class SetPasswordSerializer(serializers.Serializer):
-#     """Сериализатор смены пароля текущего пользователя."""
-
-#     new_password = serializers.CharField(required=True)
-#     current_password = serializers.CharField(required=True)
-
-#     def create(self, validated_data):
-#         """Возвращает валидированные данные без создания объектов."""
-#         return validated_data
-
-#     def update(self, instance, validated_data):
-#         """Не изменяет объект и возвращает переданный экземпляр."""
-#         return instance
-
-
-# class TokenCreateSerializer(serializers.Serializer):
-#     """Сериализатор для получения токена авторизации (email + пароль)."""
-
-#     email = serializers.EmailField(required=True)
-#     password = serializers.CharField(required=True, write_only=True)
-
-#     def validate(self, data):
-#         """Проверяет наличие полей и корректность email + пароля."""
-#         email = data.get('email')
-#         password = data.get('password')
-
-#         errors = {}
-#         if not email:
-#             errors['email'] = ['Обязательное поле.']
-#         if not password:
-#             errors['password'] = ['Обязательное поле.']
-#         if errors:
-#             raise serializers.ValidationError(errors)
-
-#         user = User.objects.filter(email=email).first()
-#         if not user or not user.check_password(password):
-#             raise serializers.ValidationError({
-#                 'email': ['Неверные учетные данные.']
-#             })
-
-#         data['user'] = user
-#         return data
-
-#     def create(self, validated_data):
-#         """Возвращает валидированные данные без создания объектов."""
-#         return validated_data
-
-#     def update(self, instance, validated_data):
-#         """Не изменяет объект и возвращает переданный экземпляр."""
-#         return instance
-
-
-# class UserCreateSerializer(serializers.ModelSerializer):
-#     """Сериализатор создания пользователя."""
-
-#     password = serializers.CharField(write_only=True)
-
-#     class Meta:
-#         model = User
-#         fields = (
-#             'id', 'email', 'username', 'first_name', 'last_name', 'password'
-#         )
-#         read_only_fields = ('id',)
-
-#     def validate(self, attrs):
-#         """
-#         Проверяет пароль встроенными валидаторами Django
-#         с учетом атрибутов пользователя.
-#         """
-#         password = attrs.get('password')
-#         temp_user = User(
-#             username=attrs.get('username'),
-#             email=attrs.get('email'),
-#             first_name=attrs.get('first_name'),
-#             last_name=attrs.get('last_name'),
-#         )
-#         try:
-#             validate_password(password, user=temp_user)
-#         except DjangoValidationError as e:
-#             raise serializers.ValidationError({'password': list(e.messages)})
-#         return attrs
-
-#     def create(self, validated_data):
-#         """Создает пользователя и сохраняет хешированный пароль."""
-#         password = validated_data.pop('password')
-#         user = User(**validated_data)
-#         user.set_password(password)
-#         user.save()
-#         return user
-
-
 class UserSerializer(DjoserUserSerializer):
     """Сериализатор пользователя для чтения данных профиля."""
 
@@ -152,7 +61,7 @@ class UserSerializer(DjoserUserSerializer):
             DjoserUserSerializer.Meta,
             'read_only_fields',
             ()
-            ) + ('is_subscribed', 'avatar'))
+        ) + ('is_subscribed', 'avatar'))
         )
 
     def get_is_subscribed(self, obj):
@@ -298,7 +207,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 and image_value in (None, '')
             )
         ):
-            raise serializers.ValidationError({'image': ['Обязательное поле.']})
+            raise serializers.ValidationError(
+                {'image': ['Обязательное поле.']})
 
         required_fields = (
             'ingredients', 'tags', 'name', 'text', 'cooking_time'
@@ -393,7 +303,7 @@ class UserWithRecipesSerializer(UserSerializer):
             UserSerializer.Meta,
             'read_only_fields',
             ()
-            ) + ('recipes', 'recipes_count'))
+        ) + ('recipes', 'recipes_count'))
         )
 
     def get_recipes(self, obj):
@@ -413,7 +323,6 @@ class UserWithRecipesSerializer(UserSerializer):
             many=True,
             context={'request': request}
         ).data
-
 
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):

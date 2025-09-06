@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count
 
-from users.models import User, Subscription
+from users.models import Subscription, User
 
 
 @admin.register(User)
@@ -64,4 +64,3 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
     list_display = ('user', 'author')
     search_fields = ('user__username', 'author__username')
-

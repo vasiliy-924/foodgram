@@ -1,11 +1,11 @@
 from django.contrib import admin
 
 from foodgram_backend.constants import (
-    MIN_COOKING_TIME_MINUTES,
     COOKING_TIME_FAST_MAX,
+    COOKING_TIME_LONG_THRESHOLD,
     COOKING_TIME_MEDIUM_MIN,
     COOKING_TIME_MEDIUM_MAX,
-    COOKING_TIME_LONG_THRESHOLD,
+    MIN_COOKING_TIME_MINUTES,
 )
 
 

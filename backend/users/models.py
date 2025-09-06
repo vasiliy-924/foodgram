@@ -1,12 +1,12 @@
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
 
 from foodgram_backend.constants import (
-    USER_FIELD_MAX_LENGTH,
     EMAIL_MAX_LENGTH,
     STR_REPRESENTATION_MAX_LENGTH,
+    USER_FIELD_MAX_LENGTH,
 )
 from users.validators import validate_username_value
 
@@ -85,14 +85,13 @@ class Subscription(models.Model):
             ),
         )
 
-    def clean(self): 
-        """Запрещает подписку пользователя на самого себя (валидация формы).""" 
-        same_user = self.user is not None and self.author is not None and ( 
-            self.user == self.author 
-        ) 
-        if same_user: 
-            raise ValidationError({'author': 'Нельзя подписаться на себя.'}) 
-
+    def clean(self):
+        """Запрещает подписку пользователя на самого себя (валидация формы)."""
+        same_user = self.user is not None and self.author is not None and (
+            self.user == self.author
+        )
+        if same_user:
+            raise ValidationError({'author': 'Нельзя подписаться на себя.'})
 
     def __str__(self):
         """Возвращает отображаемое имя автора подписки."""

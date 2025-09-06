@@ -1,14 +1,14 @@
 from django.contrib import admin
 from django.db.models import Count
 from django.utils.safestring import mark_safe
+
 from foodgram_backend.constants import (
     ADMIN_INGREDIENT_INLINE_EXTRA,
     ADMIN_INGREDIENT_INLINE_MIN_NUM,
-    ADMIN_RECIPE_IMAGE_WIDTH,
     ADMIN_RECIPE_IMAGE_HEIGHT,
+    ADMIN_RECIPE_IMAGE_WIDTH,
 )
 from recipes.filters import CookingTimeFilter
-
 from recipes.models import (
     Favorite,
     Ingredient,
