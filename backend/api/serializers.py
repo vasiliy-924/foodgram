@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from rest_framework import serializers
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -285,6 +286,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         is_full_update = bool(
             request and getattr(request, 'method', '').upper() == 'PUT'
         )
+
+        method = (getattr(request, 'method', '') if request else '').upper()
+        initial = self.initial_data or {}
+        image_value = initial.get('image', None)
+        if (
+            (method == 'POST' and image_value in (None, ''))
+            or (
+                method in ('PUT', 'PATCH')
+                and 'image' in initial
+                and image_value in (None, '')
+            )
+        ):
+            raise serializers.ValidationError({'image': ['Обязательное поле.']})
+
         required_fields = (
             'ingredients', 'tags', 'name', 'text', 'cooking_time'
         )
@@ -399,9 +414,6 @@ class UserWithRecipesSerializer(UserSerializer):
             context={'request': request}
         ).data
 
-    def get_recipes_count(self, obj):
-        """Возвращает количество рецептов автора."""
-        return obj.recipes.count()
 
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
@@ -436,8 +448,14 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Возвращает данные автора подписки как в списке подписок."""
+        author_with_count = (
+            User.objects
+            .filter(pk=instance.author_id)
+            .annotate(recipes_count=Count('recipes'))
+            .first()
+        ) or instance.author
         return UserWithRecipesSerializer(
-            instance.author,
+            author_with_count,
             context=self.context,
         ).data
 

@@ -7,8 +7,8 @@ from django.db.models import (
     Count,
     F,
 )
+from django.db import IntegrityError
 from django.http import FileResponse
-from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from http import HTTPStatus
@@ -23,6 +23,7 @@ from rest_framework.response import Response
 
 
 from api.permissions import IsAuthorOrReadOnly
+from api.pagination import LimitPageNumberPagination
 from api.serializers import (
     FavoriteCreateSerializer,
     TagSerializer,
@@ -36,7 +37,7 @@ from api.serializers import (
     ShoppingCartCreateSerializer,
 )
 from api.filters import RecipeFilter, NameSearchFilter
-from api.services import format_shopping_list
+from api.services import format_shopping_list, build_absolute_file_url
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -73,6 +74,7 @@ class UsersViewSet(DjoserUserViewSet):
 
     queryset = User.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = LimitPageNumberPagination
 
     def get_queryset(self):
         """Аннотирует количество рецептов пользователя в recipes_count."""
@@ -106,7 +108,7 @@ class UsersViewSet(DjoserUserViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response({'avatar': build_absolute_file_url(request, request.user.avatar)})
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
@@ -143,7 +145,7 @@ class UsersViewSet(DjoserUserViewSet):
         permission_classes=(IsAuthenticated,),
         url_path='subscribe',
     )
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
         """Оформляет подписку на автора через валидирующий сериализатор."""
         author = self.get_object()
         serializer = SubscriptionCreateSerializer(
@@ -151,11 +153,17 @@ class UsersViewSet(DjoserUserViewSet):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        try:
+            serializer.save()
+        except IntegrityError:
+            return Response(
+                {'detail': 'Подписка уже существует или недопустима.'},
+                status=HTTPStatus.BAD_REQUEST,
+            )
         return Response(serializer.data, status=HTTPStatus.CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, pk=None):
+    def unsubscribe(self, request, id=None):
         """Отписывает от автора, если подписка существовала."""
         author = self.get_object()
         deleted, _ = Subscription.objects.filter(
@@ -228,6 +236,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @favorite.mapping.delete
     def unfavorite(self, request, pk=None):
         """Удаляет рецепт из избранного пользователя."""
+        self.get_object() #
         deleted, _ = Favorite.objects.filter(
             user=request.user,
             recipe_id=pk,
@@ -251,6 +260,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @add_to_cart.mapping.delete
     def remove_from_cart(self, request, pk=None):
         """Удаляет рецепт из списка покупок пользователя."""
+        self.get_object() #
         deleted, _ = ShoppingCart.objects.filter(
             user=request.user,
             recipe_id=pk,
@@ -264,6 +274,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def _create_relation(self, serializer_class, pk):
         """Общий метод создания связи (избранное/список покупок)."""
+        self.get_object() #
         data = {
             'user': getattr(self.request.user, 'id', None),
             'recipe': pk,
@@ -285,10 +296,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         """Возвращает короткую ссылку на рецепт."""
         recipe = self.get_object()
-        short_path = reverse(
-            'recipe-short-link',
-            kwargs={'short_id': recipe.id},
-        )
+        # short_path = reverse(
+        #     'recipe-short-link',
+        #     kwargs={'short_id': recipe.id},
+        # )
+        short_path = f"/s/{recipe.id}/"
         absolute_url = (
             request.build_absolute_uri(short_path)
             if request else short_path
