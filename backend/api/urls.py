@@ -1,13 +1,10 @@
 from django.urls import include, path
-
 from rest_framework.routers import DefaultRouter
 
 from api.views import (
     IngredientViewSet,
     RecipeViewSet,
     TagViewSet,
-    TokenLoginView,
-    TokenLogoutView,
     UsersViewSet,
 )
 
@@ -36,8 +33,8 @@ api_v1_router.register(
 )
 
 auth_urlpatterns = [
-    path('token/login/', TokenLoginView.as_view(), name='token-login'),
-    path('token/logout/', TokenLogoutView.as_view(), name='token-logout'),
+    path('', include('djoser.urls')),
+    path('', include('djoser.urls.authtoken')),
 ]
 
 urlpatterns = [

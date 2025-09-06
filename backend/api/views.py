@@ -1,32 +1,42 @@
-from django.db.models import BooleanField, Exists, OuterRef, Sum, Value, Count
-from django.http import HttpResponse
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
-
-from rest_framework import generics, mixins, viewsets
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import (
+    BooleanField,
+    Exists,
+    OuterRef,
+    Sum,
+    Value,
+    Count,
+    F,
+)
+from django.http import FileResponse
 from django.urls import reverse
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet as DjoserUserViewSet
 from http import HTTPStatus
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
+from rest_framework.response import Response
+
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
-    #TokenCreateSerializer,
+    FavoriteCreateSerializer,
     TagSerializer,
     IngredientSerializer,
     UserSerializer,
-    #UserCreateSerializer,
-    #SetPasswordSerializer,
     SetAvatarSerializer,
     RecipeReadSerializer,
     RecipeWriteSerializer,
-    RecipeMinifiedSerializer,
     UserWithRecipesSerializer,
+    SubscriptionCreateSerializer,
+    ShoppingCartCreateSerializer,
 )
 from api.filters import RecipeFilter, NameSearchFilter
+from api.services import format_shopping_list
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -35,100 +45,39 @@ from recipes.models import (
     ShoppingCart,
     Tag
 )
-from users.models import Subscription
-from users.models import User
+from users.models import Subscription, User
 
 
-class TokenLoginView(generics.GenericAPIView):
-    """Получение токена авторизации по email и паролю."""
-
-    serializer_class = TokenCreateSerializer
-    permission_classes = (AllowAny,)
-
-    def post(self, request):
-        """Возвращает auth_token для валидных учетных данных."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'auth_token': token.key})
-
-
-class TokenLogoutView(generics.GenericAPIView):
-    """Удаление токена текущего пользователя."""
-
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request):
-        """Удаляет все токены текущего пользователя и возвращает 204."""
-        Token.objects.filter(user=request.user).delete()
-        return Response(status=HTTPStatus.NO_CONTENT)
-
-
-class TagViewSet(
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
-):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """Просмотр тегов (список и детальная информация)."""
 
-    queryset = Tag.objects.all().order_by('id')
+    queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
 
 
-class IngredientViewSet(
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
-):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Поиск и просмотр ингредиентов (список и детально)."""
 
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
-    queryset = Ingredient.objects.all().order_by('id')
+    queryset = Ingredient.objects.all()
     filter_backends = (NameSearchFilter,)
     search_fields = ('^name',)
 
 
-class UsersViewSet(viewsets.ModelViewSet):
+class UsersViewSet(DjoserUserViewSet):
     """Работа с пользователями и их профилем/подписками."""
 
-    queryset = User.objects.all().order_by('id')
-    http_method_names = ('get', 'post', 'put', 'delete')
+    queryset = User.objects.all()
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
         """Аннотирует количество рецептов пользователя в recipes_count."""
         base_qs = super().get_queryset()
         return base_qs.annotate(recipes_count=Count('recipes'))
-
-    def get_permissions(self):
-        """Определяет права доступа в зависимости от действия."""
-        if self.action in ('list', 'retrieve', 'create'):
-            return (AllowAny(),)
-        if self.action == 'me':
-            return (IsAuthenticated(),)
-        return (IsAuthenticated(),)
-
-    def get_serializer_class(self):
-        """Возвращает сериализатор для текущего действия."""
-        if self.action == 'create':
-            return UserCreateSerializer
-        return UserSerializer
-
-    def update(self, request, *args, **kwargs):
-        """Запрещает полный update пользователей (405)."""
-        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
-
-    def partial_update(self, request, *args, **kwargs):
-        """Запрещает частичный update пользователей (405)."""
-        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
-
-    def destroy(self, request, *args, **kwargs):
-        """Запрещает удаление пользователей (405)."""
-        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
     @action(
         detail=False,
@@ -145,34 +94,6 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=('post',),
-        permission_classes=(IsAuthenticated,),
-        url_path='set_password',
-    )
-    def set_password(self, request):
-        """Меняет пароль при верном текущем пароле, возвращает 204."""
-        serializer = SetPasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        current = serializer.validated_data['current_password']
-        new = serializer.validated_data['new_password']
-        if not request.user.check_password(current):
-            return Response(
-                {'current_password': ['Неверный пароль.']},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        try:
-            validate_password(new, user=request.user)
-        except DjangoValidationError as e:
-            return Response(
-                {'new_password': list(e.messages)},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        request.user.set_password(new)
-        request.user.save()
-        return Response(status=HTTPStatus.NO_CONTENT)
-
-    @action(
-        detail=False,
         methods=('put',),
         permission_classes=(IsAuthenticated,),
         url_path='me/avatar',
@@ -184,17 +105,13 @@ class UsersViewSet(viewsets.ModelViewSet):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        url = user.avatar.url
-        if request:
-            url = request.build_absolute_uri(url)
-        return Response({'avatar': url})
+        serializer.save()
+        return Response(serializer.data)
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
         """Удаляет аватар текущего пользователя, если он установлен."""
-        if request.user.avatar:
-            request.user.avatar.delete(save=True)
+        request.user.avatar.delete(save=True)
         return Response(status=HTTPStatus.NO_CONTENT)
 
     @action(
@@ -209,7 +126,6 @@ class UsersViewSet(viewsets.ModelViewSet):
             User.objects
             .filter(author_subscriptions__user=request.user)
             .annotate(recipes_count=Count('recipes'))
-            .distinct()
         )
         page = self.paginate_queryset(qs)
         serializer = UserWithRecipesSerializer(
@@ -228,26 +144,14 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='subscribe',
     )
     def subscribe(self, request, pk=None):
-        """Оформляет подписку на автора, если это не сам пользователь."""
+        """Оформляет подписку на автора через валидирующий сериализатор."""
         author = self.get_object()
-        if author == request.user:
-            return Response(
-                {'detail': 'Нельзя подписаться на себя.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        _, created = Subscription.objects.get_or_create(
-            user=request.user,
-            author=author,
-        )
-        if not created:
-            return Response(
-                {'detail': 'Подписка уже существует.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        serializer = UserWithRecipesSerializer(
-            author,
+        serializer = SubscriptionCreateSerializer(
+            data={'author': author.id},
             context={'request': request},
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=HTTPStatus.CREATED)
 
     @subscribe.mapping.delete
@@ -258,12 +162,14 @@ class UsersViewSet(viewsets.ModelViewSet):
             user=request.user,
             author=author,
         ).delete()
-        if not deleted:
-            return Response(
-                {'detail': 'Не была оформлена подписка.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(status=HTTPStatus.NO_CONTENT)
+        return Response(
+            status=(
+                HTTPStatus.NO_CONTENT if deleted else HTTPStatus.BAD_REQUEST
+            ),
+            data=None if deleted else {
+                'detail': 'Не была оформлена подписка.'
+            },
+        )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -311,49 +217,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
             is_in_shopping_cart=Value(False, output_field=BooleanField()),
         )
 
-    def perform_create(self, serializer):
-        """Сохраняет рецепт, автора берет из сериализатора."""
-        serializer.save()
-
     @action(
         detail=True,
         methods=('post',),
         permission_classes=(IsAuthenticated,),
     )
-    def favorite(self, request, pk=None):
-        """Добавляет рецепт в избранное пользователя."""
-        recipe = self.get_object()
-        _, created = Favorite.objects.get_or_create(
-            user=request.user,
-            recipe=recipe
-        )
-        if not created:
-            return Response(
-                {'detail': 'Уже в избранном.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(
-            RecipeMinifiedSerializer(
-                recipe,
-                context={'request': request}
-            ).data,
-            status=HTTPStatus.CREATED
-        )
+    def favorite(self, _request, pk=None):
+        return self._create_relation(FavoriteCreateSerializer, pk)
 
     @favorite.mapping.delete
     def unfavorite(self, request, pk=None):
         """Удаляет рецепт из избранного пользователя."""
-        recipe = self.get_object()
         deleted, _ = Favorite.objects.filter(
             user=request.user,
-            recipe=recipe,
+            recipe_id=pk,
         ).delete()
-        if not deleted:
-            return Response(
-                {'detail': 'Не было в избранном.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(status=HTTPStatus.NO_CONTENT)
+        return Response(
+            status=(
+                HTTPStatus.NO_CONTENT if deleted else HTTPStatus.BAD_REQUEST
+            ),
+            data=None if deleted else {'detail': 'Не было в избранном.'},
+        )
 
     @action(
         detail=True,
@@ -361,40 +245,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,),
         url_path='shopping_cart',
     )
-    def add_to_cart(self, request, pk=None):
-        """Добавляет рецепт в список покупок пользователя."""
-        recipe = self.get_object()
-        _, created = ShoppingCart.objects.get_or_create(
-            user=request.user,
-            recipe=recipe
-        )
-        if not created:
-            return Response(
-                {'detail': 'Уже в списке покупок.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(
-            RecipeMinifiedSerializer(
-                recipe,
-                context={'request': request}
-            ).data,
-            status=HTTPStatus.CREATED
-        )
+    def add_to_cart(self, _request, pk=None):
+        return self._create_relation(ShoppingCartCreateSerializer, pk)
 
     @add_to_cart.mapping.delete
     def remove_from_cart(self, request, pk=None):
         """Удаляет рецепт из списка покупок пользователя."""
-        recipe = self.get_object()
         deleted, _ = ShoppingCart.objects.filter(
             user=request.user,
-            recipe=recipe,
+            recipe_id=pk,
         ).delete()
-        if not deleted:
-            return Response(
-                {'detail': 'Не было в списке покупок.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(status=HTTPStatus.NO_CONTENT)
+        return Response(
+            status=(
+                HTTPStatus.NO_CONTENT if deleted else HTTPStatus.BAD_REQUEST
+            ),
+            data=None if deleted else {'detail': 'Не было в списке покупок.'},
+        )
+
+    def _create_relation(self, serializer_class, pk):
+        """Общий метод создания связи (избранное/список покупок)."""
+        data = {
+            'user': getattr(self.request.user, 'id', None),
+            'recipe': pk,
+        }
+        serializer = serializer_class(
+            data=data,
+            context={'request': self.request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     @action(
         detail=True,
@@ -426,19 +306,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredients = (
             IngredientInRecipe.objects
             .filter(recipe__shoppingcart__user=request.user)
-            .values('ingredient__name', 'ingredient__measurement_unit')
+            .values(
+                name=F('ingredient__name'),
+                measurement_unit=F('ingredient__measurement_unit')
+            )
             .annotate(total_amount=Sum('amount'))
-            .order_by('ingredient__name')
+            .order_by('name')
         )
-        lines = []
-        for item in ingredients:
-            name = item['ingredient__name']
-            unit = item['ingredient__measurement_unit']
-            amount = item['total_amount']
-            lines.append(f"{name} ({unit}) — {amount}")
-        content = "\n".join(lines) or "Список покупок пуст."
-        response = HttpResponse(
-            content,
+        file_obj = format_shopping_list(ingredients)
+        response = FileResponse(
+            file_obj,
             content_type='text/plain; charset=utf-8'
         )
         response['Content-Disposition'] = (

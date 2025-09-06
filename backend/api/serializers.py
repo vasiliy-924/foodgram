@@ -9,14 +9,14 @@ from foodgram_backend.constants import (
     MIN_INGREDIENT_AMOUNT,
 )
 from recipes.models import (
-    #Favorite,
+    Favorite,
     Ingredient,
     IngredientInRecipe,
     Recipe,
-    #ShoppingCart,
+    ShoppingCart,
     Tag
 )
-#from users.models import Subscription
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -391,7 +391,7 @@ class UserWithRecipesSerializer(UserSerializer):
                 limit = int(raw_limit) if raw_limit is not None else None
             except Exception:
                 limit = None
-        qs = obj.recipes.all().order_by('-id')
+        qs = obj.recipes.all()
         qs = qs[:limit]
         return RecipeMinifiedSerializer(
             qs,
@@ -403,3 +403,106 @@ class UserWithRecipesSerializer(UserSerializer):
         """Возвращает количество рецептов автора."""
         return obj.recipes.count()
 
+
+class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор создания подписки пользователя на автора."""
+
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    author = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Subscription
+        fields = ('user', 'author')
+
+    def validate(self, attrs):
+        """Запрещает подписку на себя и повторную подписку."""
+        user = attrs.get('user')
+        author = attrs.get('author')
+
+        if user == author:
+            raise serializers.ValidationError({
+                'detail': 'Нельзя подписаться на себя.'
+            })
+
+        if Subscription.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError({
+                'detail': 'Подписка уже существует.'
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        return Subscription.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        """Возвращает данные автора подписки как в списке подписок."""
+        return UserWithRecipesSerializer(
+            instance.author,
+            context=self.context,
+        ).data
+
+
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор добавления рецепта в избранное."""
+
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
+    )
+    recipe = serializers.PrimaryKeyRelatedField(
+        queryset=Recipe.objects.all()
+    )
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+    def validate(self, attrs):
+        user = attrs.get('user')
+        recipe = attrs.get('recipe')
+        if Favorite.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError({
+                'detail': 'Уже в избранном.'
+            })
+        return attrs
+
+    def create(self, validated_data):
+        return Favorite.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return RecipeMinifiedSerializer(
+            instance.recipe,
+            context=self.context,
+        ).data
+
+
+class ShoppingCartCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор добавления рецепта в список покупок."""
+
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
+    )
+    recipe = serializers.PrimaryKeyRelatedField(
+        queryset=Recipe.objects.all()
+    )
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+
+    def validate(self, attrs):
+        user = attrs.get('user')
+        recipe = attrs.get('recipe')
+        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError({
+                'detail': 'Уже в списке покупок.'
+            })
+        return attrs
+
+    def create(self, validated_data):
+        return ShoppingCart.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return RecipeMinifiedSerializer(
+            instance.recipe,
+            context=self.context,
+        ).data
