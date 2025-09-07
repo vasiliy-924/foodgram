@@ -1,6 +1,5 @@
 from http import HTTPStatus
 
-from django.db import IntegrityError
 from django.db.models import (
     BooleanField,
     Exists,
@@ -11,6 +10,7 @@ from django.db.models import (
     F,
 )
 from django.http import FileResponse
+from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
@@ -79,7 +79,9 @@ class UsersViewSet(DjoserUserViewSet):
     def get_queryset(self):
         """Аннотирует количество рецептов пользователя в recipes_count."""
         base_qs = super().get_queryset()
-        return base_qs.annotate(recipes_count=Count('recipes'))
+        return base_qs.annotate(
+            recipes_count=Count('recipes')
+        ).order_by('username')
 
     @action(
         detail=False,
@@ -130,6 +132,7 @@ class UsersViewSet(DjoserUserViewSet):
             User.objects
             .filter(subscriptions_to_author__user=request.user)
             .annotate(recipes_count=Count('recipes'))
+            .order_by('username')
         )
         page = self.paginate_queryset(qs)
         serializer = UserWithRecipesSerializer(
@@ -151,18 +154,18 @@ class UsersViewSet(DjoserUserViewSet):
         """Оформляет подписку на автора через валидирующий сериализатор."""
         author = self.get_object()
         serializer = SubscriptionCreateSerializer(
-            data={'author': author.id},
+            data={'user': request.user.id, 'author': author.id},
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        try:
-            serializer.save()
-        except IntegrityError:
-            return Response(
-                {'detail': 'Подписка уже существует или недопустима.'},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return Response(serializer.data, status=HTTPStatus.CREATED)
+        subscription = Subscription.objects.create(
+            user=request.user,
+            author=author,
+        )
+        return Response(
+            serializer.to_representation(subscription),
+            status=HTTPStatus.CREATED,
+        )
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, id=None):
@@ -298,7 +301,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         """Возвращает короткую ссылку на рецепт."""
         recipe = self.get_object()
-        short_path = f"/s/{recipe.id}/"
+        short_path = reverse(
+            'recipes:recipe-short-link',
+            kwargs={'short_id': str(recipe.id)}
+        )
         absolute_url = (
             request.build_absolute_uri(short_path)
             if request else short_path
