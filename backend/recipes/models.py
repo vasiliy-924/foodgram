@@ -110,7 +110,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('-created_at', '-id')
+        ordering = ('-created_at',)
 
     def __str__(self):
         """Возвращает отображаемое название рецепта."""
@@ -152,7 +152,7 @@ class IngredientInRecipe(models.Model):
         ingredient_name = getattr(
             self.ingredient, 'name', str(self.ingredient)
         )
-        text = f"{ingredient_name} - {self.amount}"
+        text = f'{ingredient_name} - {self.amount}'
         return text[:STR_REPRESENTATION_MAX_LENGTH]
 
 
@@ -172,6 +172,12 @@ class UserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='%(app_label)s_%(class)s_unique_user_recipe',
+            ),
+        )
 
     def __str__(self):
         """Уникальная строка за счет включения типа связи."""
@@ -182,26 +188,14 @@ class UserRecipeRelation(models.Model):
 class Favorite(UserRecipeRelation):
     """Связь рецепта и пользователя в списке избранного."""
 
-    class Meta:
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_favorite_per_user'
-            ),
-        )
 
 
 class ShoppingCart(UserRecipeRelation):
     """Позиция рецепта в списке покупок пользователя."""
 
-    class Meta:
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Позиция в списке покупок'
         verbose_name_plural = 'Список покупок'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_cart_item_per_user'
-            ),
-        )

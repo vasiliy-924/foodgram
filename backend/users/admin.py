@@ -46,7 +46,7 @@ class UserAdmin(BaseUserAdmin):
         qs = super().get_queryset(request)
         return qs.annotate(
             recipes_count=Count('recipes', distinct=True),
-            subscribers_count=Count('author_subscriptions', distinct=True),
+            subscribers_count=Count('subscriptions_to_author', distinct=True),
         )
 
     @admin.display(description='Рецептов', ordering='recipes_count')

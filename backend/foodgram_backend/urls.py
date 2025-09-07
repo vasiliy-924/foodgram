@@ -10,7 +10,7 @@ urlpatterns = [
         admin.site.urls
     ),
     path('', include('recipes.urls')
-         ),
+    ),
     path(
         'api/',
         include('api.urls')

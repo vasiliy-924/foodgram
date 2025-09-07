@@ -128,7 +128,7 @@ class UsersViewSet(DjoserUserViewSet):
         """Возвращает список авторов, на которых подписан пользователь."""
         qs = (
             User.objects
-            .filter(author_subscriptions__user=request.user)
+            .filter(subscriptions_to_author__user=request.user)
             .annotate(recipes_count=Count('recipes'))
         )
         page = self.paginate_queryset(qs)

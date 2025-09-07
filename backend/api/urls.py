@@ -32,8 +32,8 @@ api_v1_router.register(
     basename='recipes'
 )
 
+
 auth_urlpatterns = [
-    path('', include('djoser.urls')),
     path('', include('djoser.urls.authtoken')),
 ]
 

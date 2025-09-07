@@ -72,7 +72,7 @@ class UserSerializer(DjoserUserSerializer):
             and getattr(request, 'user', None)
             and request.user.is_authenticated
             and obj
-            and request.user.subscriptions.filter(author=obj).exists()
+            and request.user.user_subscriptions.filter(author=obj).exists()
         )
 
     def get_avatar(self, obj):
