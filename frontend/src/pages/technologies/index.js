@@ -21,6 +21,7 @@ const Technologies = () => {
               <li className={styles.textItem}>Python 3</li>
               <li className={styles.textItem}>Django {process.env.REACT_APP_DJANGO_VERSION || '5.x'}</li>
               <li className={styles.textItem}>Django REST Framework</li>
+              <li className={styles.textItem}>Djoser</li>
               <li className={styles.textItem}>django-filter</li>
               <li className={styles.textItem}>PostgreSQL</li>
               <li className={styles.textItem}>Gunicorn</li>

@@ -31,8 +31,8 @@ Foodgram — сервис публикации рецептов. Пользов�
 [на проде](https://thunderfoodgram.hopto.org/api/docs/).
 
 ## Стек
-- **Backend**: Python 3.12, Django, Django REST Framework, django-filter,
-  Gunicorn, PostgreSQL
+- **Backend**: Python 3.12, Django, Django REST Framework, Djoser,
+  django-filter, Gunicorn, PostgreSQL
 - **Frontend**: React (SPA, предсобранный билд)
 - **Infra/CI/CD**: Docker, Docker Compose, Nginx, GitHub Actions
 
@@ -46,6 +46,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1,thunderfoodgram.hopto.org
 # Использовать SQLite локально (True/False)
 DJANGO_USE_SQLITE=False
 DJANGO_DEBUG=False
+DJANGO_LOG_LEVEL=INFO
 
 # Postgres
 POSTGRES_DB=django_db
