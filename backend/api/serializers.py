@@ -197,15 +197,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
         if not tags:
             raise serializers.ValidationError({'tags': ['Обязательное поле.']})
-        tag_ids = [tag.id for tag in tags]
-        if len(tag_ids) != len(set(tag_ids)):
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError({
                 'tags': ['Теги не должны повторяться.']
             })
         return attrs
 
     def validate_image(self, value):
-        if value in (None, ''):
+        if not value:
             raise serializers.ValidationError('Обязательное поле.')
         return value
 
@@ -337,13 +336,6 @@ class FavoriteCreateSerializer(RecipeRelationCreateSerializer):
 
 class ShoppingCartCreateSerializer(RecipeRelationCreateSerializer):
     """Сериализатор добавления рецепта в список покупок."""
-
-    user = serializers.HiddenField(
-        default=serializers.CurrentUserDefault()
-    )
-    recipe = serializers.PrimaryKeyRelatedField(
-        queryset=Recipe.objects.all()
-    )
 
     class Meta:
         model = ShoppingCart

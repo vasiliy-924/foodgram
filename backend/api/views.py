@@ -158,14 +158,8 @@ class UsersViewSet(DjoserUserViewSet):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        subscription = Subscription.objects.create(
-            user=request.user,
-            author=author,
-        )
-        return Response(
-            serializer.to_representation(subscription),
-            status=HTTPStatus.CREATED,
-        )
+        serializer.save()
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, id=None):
@@ -303,7 +297,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = self.get_object()
         short_path = reverse(
             'recipes:recipe-short-link',
-            kwargs={'short_id': str(recipe.id)}
+            kwargs={'short_id': recipe.id}
         )
         absolute_url = (
             request.build_absolute_uri(short_path)

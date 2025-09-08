@@ -181,7 +181,7 @@ class UserRecipeRelation(models.Model):
 
     def __str__(self):
         """Уникальная строка за счет включения типа связи."""
-        text = f"{self._meta.verbose_name}: {self.recipe}"
+        text = f'{self._meta.verbose_name}: {self.recipe}'
         return text[:STR_REPRESENTATION_MAX_LENGTH]
 
 

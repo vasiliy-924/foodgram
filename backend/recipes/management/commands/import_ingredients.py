@@ -94,7 +94,7 @@ class Command(BaseCommand):
 
             if created_summary:
                 parts = [
-                    f"{name}: {count}"
+                    f'{name}: {count}'
                     for name, count in created_summary.items()
                 ]
                 msg = (

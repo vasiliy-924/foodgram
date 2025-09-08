@@ -20,8 +20,8 @@ from users.models import User, Subscription
 
 
 DEFAULT_IMAGE_B64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lE\n"
-    "QVR42mP8/x8AAwMCAO3GkF8AAAAASUVORK5CYII="
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lE\n'
+    'QVR42mP8/x8AAwMCAO3GkF8AAAAASUVORK5CYII='
 )
 
 
@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
             created.update(self._ensure_interactions(interactions))
 
-            parts = [f"{k}: {v}" for k, v in created.items()]
+            parts = [f'{k}: {v}' for k, v in created.items()]
             self.stdout.write('seed_demo выполнена → ' + ', '.join(parts))
         except Exception as exc:
             raise CommandError(f'Ошибка при seed_demo: {exc}')
@@ -421,7 +421,7 @@ class Command(BaseCommand):
 
         def candidates_for(stem: str):
             for ext in exts:
-                yield os.path.join(photos_dir, f"{stem}{ext}")
+                yield os.path.join(photos_dir, f'{stem}{ext}')
 
         for path in candidates_for(name):
             if os.path.exists(path):
